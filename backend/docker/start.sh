@@ -7,6 +7,9 @@ sed -ri "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf
 sed -ri "s/<VirtualHost \\*:80>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf
 
 php artisan package:discover --ansi
+if [ "$RESET_DATABASE" = "1" ]; then
+  php artisan db:wipe --force
+fi
 php artisan migrate --force
 php artisan storage:link || true
 
