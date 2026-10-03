@@ -10,7 +10,15 @@ php artisan package:discover --ansi
 if [ "$RESET_DATABASE" = "1" ]; then
   php artisan db:wipe --force
 fi
-php artisan migrate --force
+
+attempt=0
+until php artisan migrate --force; do
+  attempt=$((attempt + 1))
+  if [ "$attempt" -ge 8 ]; then
+    exit 1
+  fi
+  sleep 4
+done
 php artisan storage:link || true
 
 # Render ends the deploy if no port is open within a few minutes.
