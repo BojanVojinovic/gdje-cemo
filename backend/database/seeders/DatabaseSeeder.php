@@ -17,6 +17,7 @@ use App\Models\Role;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Venue;
+use App\Services\BlobStorage;
 use App\Services\ReviewService;
 use App\Services\SlugService;
 use Illuminate\Database\Seeder;
@@ -648,6 +649,11 @@ class DatabaseSeeder extends Seeder
 
         $this->render(storage_path('app/public/'.$path), 1400, 900, $title, $subtitle, $rgb);
         $this->render(storage_path('app/public/'.$thumb), 720, 460, $title, $subtitle, $rgb);
+
+        if (BlobStorage::enabled()) {
+            BlobStorage::put($path, (string) file_get_contents(storage_path('app/public/'.$path)), 'image/jpeg');
+            BlobStorage::put($thumb, (string) file_get_contents(storage_path('app/public/'.$thumb)), 'image/jpeg');
+        }
 
         return compact('path', 'thumb');
     }

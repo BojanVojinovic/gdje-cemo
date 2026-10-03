@@ -21,6 +21,11 @@ const nextConfig: NextConfig = {
         hostname: "*.onrender.com",
         pathname: "/storage/**",
       },
+      {
+        protocol: "https",
+        hostname: "*.public.blob.vercel-storage.com",
+        pathname: "/**",
+      },
     ],
   },
 };

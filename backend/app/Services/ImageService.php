@@ -46,6 +46,11 @@ class ImageService
             ]);
         }
 
+        if (BlobStorage::enabled()) {
+            BlobStorage::put($path, (string) Storage::disk('public')->get($path), 'image/webp');
+            BlobStorage::put($thumbPath, (string) Storage::disk('public')->get($thumbPath), 'image/webp');
+        }
+
         return [
             'path' => $path,
             'thumb_path' => $thumbPath,
@@ -62,6 +67,9 @@ class ImageService
 
         if ($files !== []) {
             Storage::disk('public')->delete($files);
+            if (BlobStorage::enabled()) {
+                BlobStorage::delete($files);
+            }
         }
     }
 
@@ -73,6 +81,10 @@ class ImageService
 
         if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
             return $path;
+        }
+
+        if (BlobStorage::enabled()) {
+            return BlobStorage::url($path);
         }
 
         return Storage::disk('public')->url($path);
