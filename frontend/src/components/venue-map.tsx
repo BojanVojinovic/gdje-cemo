@@ -32,6 +32,7 @@ export function VenueMap({ latitude, longitude, label }: Props) {
         fillColor: "#c4513c",
         fillOpacity: 1,
       }).addTo(instance).bindPopup(label);
+      requestAnimationFrame(() => instance.invalidateSize());
       map = instance;
     }
 
@@ -43,5 +44,9 @@ export function VenueMap({ latitude, longitude, label }: Props) {
     };
   }, [latitude, longitude, label]);
 
-  return <div ref={node} className="h-72 overflow-hidden rounded-lg border border-line" role="img" aria-label={`Mapa: ${label}`} />;
+  return (
+    <div className="h-40 w-full overflow-hidden rounded-lg border border-line">
+      <div ref={node} className="h-full w-full" role="img" aria-label={`Mapa: ${label}`} />
+    </div>
+  );
 }

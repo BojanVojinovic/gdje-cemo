@@ -1,14 +1,35 @@
 "use client";
 
+import { ComboBox } from "@/components/combo-box";
 import { Field, inputClass } from "@/components/ui";
 import { api } from "@/lib/api";
 import { when, type VenueContentItem } from "@/lib/hospitality";
+import type { PageMeta, Venue } from "@/types";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function EventsPage() {
   const [items, setItems] = useState<VenueContentItem[]>([]);
   const [filters, setFilters] = useState({ city: "", category: "", date: "", price: "", sort: "date", venue: "" });
+  const [cities, setCities] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [venues, setVenues] = useState<{ slug: string; name: string }[]>([]);
+
+  useEffect(() => {
+    api<string[]>("/cities").then((response) => setCities(response.data)).catch(() => undefined);
+    api<Venue[]>("/venues?per_page=50").then((response) => {
+      setVenues(response.data.map((venue) => ({ slug: venue.slug, name: venue.name })));
+    }).catch(() => undefined);
+    api<VenueContentItem[]>("/events?upcoming=1&sort=date").then(async (response) => {
+      const rows = [...response.data];
+      const last = (response.meta as PageMeta | undefined)?.last_page ?? 1;
+      for (let page = 2; page <= last; page += 1) {
+        const next = await api<VenueContentItem[]>(`/events?upcoming=1&sort=date&page=${page}`);
+        rows.push(...next.data);
+      }
+      setCategories([...new Set(rows.map((item) => item.event_category).filter((item): item is string => Boolean(item)))]);
+    }).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     let cancel = false;
@@ -45,23 +66,23 @@ export default function EventsPage() {
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
       <h1 className="font-serif text-4xl">Događaji</h1>
       <form className="grid gap-3 sm:grid-cols-3" onSubmit={(event) => event.preventDefault()}>
-        <Field label="Grad"><input className={inputClass} value={filters.city} onChange={(event) => setFilters({ ...filters, city: event.target.value })} /></Field>
-        <Field label="Kategorija"><input className={inputClass} value={filters.category} onChange={(event) => setFilters({ ...filters, category: event.target.value })} /></Field>
+        <Field label="Grad"><ComboBox value={filters.city} onChange={(value) => setFilters({ ...filters, city: value })} options={[{ value: "", label: "Svi" }, ...cities.map((city) => ({ value: city, label: city }))]} /></Field>
+        <Field label="Kategorija"><ComboBox value={filters.category} onChange={(value) => setFilters({ ...filters, category: value })} options={[{ value: "", label: "Sve" }, ...categories.map((category) => ({ value: category, label: category }))]} /></Field>
         <Field label="Datum"><input type="date" className={inputClass} value={filters.date} onChange={(event) => setFilters({ ...filters, date: event.target.value })} /></Field>
-        <Field label="Mjesto (slug)"><input className={inputClass} value={filters.venue} onChange={(event) => setFilters({ ...filters, venue: event.target.value })} /></Field>
+        <Field label="Mjesto"><ComboBox value={filters.venue} onChange={(value) => setFilters({ ...filters, venue: value })} options={[{ value: "", label: "Sva mjesta" }, ...venues.map((venue) => ({ value: venue.slug, label: venue.name }))]} /></Field>
         <Field label="Cijena">
-          <select className={inputClass} value={filters.price} onChange={(event) => setFilters({ ...filters, price: event.target.value })}>
-            <option value="">Sve</option>
-            <option value="free">Besplatno</option>
-            <option value="paid">Plaćeno</option>
-          </select>
+          <ComboBox value={filters.price} onChange={(value) => setFilters({ ...filters, price: value })} options={[
+            { value: "", label: "Sve" },
+            { value: "free", label: "Besplatno" },
+            { value: "paid", label: "Plaćeno" },
+          ]} />
         </Field>
         <Field label="Sortiranje">
-          <select className={inputClass} value={filters.sort} onChange={(event) => setFilters({ ...filters, sort: event.target.value })}>
-            <option value="date">Datum</option>
-            <option value="relevance">Novije</option>
-            <option value="proximity">Blizina</option>
-          </select>
+          <ComboBox value={filters.sort} onChange={(value) => setFilters({ ...filters, sort: value })} options={[
+            { value: "date", label: "Datum" },
+            { value: "relevance", label: "Novije" },
+            { value: "proximity", label: "Blizina" },
+          ]} />
         </Field>
       </form>
       {items.length === 0 ? <p className="text-sm text-muted">Nema objavljenih događaja za ove filtere.</p> : (

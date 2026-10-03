@@ -3,11 +3,13 @@
 import { FloorCanvas, TableLegend } from "@/components/floor-canvas";
 import { ReportButton } from "@/components/review-section";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { contentTypeLabel, seatsLabel, when, type FloorPlanPayload, type VenueContentItem } from "@/lib/hospitality";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export function VenueHospitality({ venueId, slug }: { venueId: number; slug: string }) {
+  const { user } = useAuth();
   const [plan, setPlan] = useState<FloorPlanPayload | null>(null);
   const [content, setContent] = useState<VenueContentItem[]>([]);
 
@@ -28,11 +30,11 @@ export function VenueHospitality({ venueId, slug }: { venueId: number; slug: str
           <div className="flex flex-wrap items-end justify-between gap-3">
             <h2 className="font-serif text-3xl">Stolovi</h2>
             {plan.settings.enabled ? (
-              <Link href={`/venue/${slug}/reserve`} className="inline-flex min-h-11 items-center rounded-full bg-sea px-4 text-sm font-semibold text-snow">Rezerviši sto</Link>
+              <Link href={user ? `/venue/${slug}/reserve` : "/login"} className="inline-flex min-h-11 items-center rounded-full bg-sea px-4 text-sm font-semibold text-snow">Rezerviši sto</Link>
             ) : null}
           </div>
           <TableLegend />
-          <FloorCanvas tables={plan.tables} width={plan.floor_plan.canvas_width} height={plan.floor_plan.canvas_height} backgroundUrl={plan.floor_plan.background_url} />
+          <FloorCanvas compact tables={plan.tables} width={plan.floor_plan.canvas_width} height={plan.floor_plan.canvas_height} backgroundUrl={plan.floor_plan.background_url} />
           <ul className="grid gap-2 sm:grid-cols-2">
             {plan.tables.map((table) => (
               <li key={table.id} className="border border-line bg-paper px-3 py-2 text-sm">

@@ -69,14 +69,15 @@ export default function EventPage() {
           <p className="font-semibold">{event.price ? `${event.price} €` : "Besplatno"}</p>
           {event.organizer ? <p className="text-sm text-muted">{event.organizer}</p> : null}
           {event.capacity ? <p className="text-sm">{payload.registered} prijavljenih · {payload.spots_remaining} slobodnih mjesta</p> : null}
-          {event.registration_mode !== "none" ? (
+          {user && event.registration_mode !== "none" ? (
             <div className="flex flex-col gap-2">
               <Button onClick={() => void register(false)}>Prijavi se</Button>
               <Button variant="secondary" onClick={() => void register(true)}>Otkaži prijavu</Button>
             </div>
-          ) : <p className="text-sm text-muted">Prijava nije potrebna.</p>}
+          ) : null}
+          {event.registration_mode === "none" ? <p className="text-sm text-muted">Prijava nije potrebna.</p> : null}
           {event.registration_mode === "table_reservation" && event.venue ? (
-            <Link href={`/venue/${event.venue.slug}/reserve`} className="text-sm font-semibold text-sea">Rezervišite sto</Link>
+            <Link href={user ? `/venue/${event.venue.slug}/reserve` : "/login"} className="text-sm font-semibold text-sea">Rezervišite sto</Link>
           ) : null}
         </aside>
       </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { ComboBox } from "@/components/combo-box";
 import { Button, EmptyState, Skeleton, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -73,11 +74,11 @@ export default function AdminUsersPage() {
                 <td className="p-3">{user.name}</td>
                 <td className="p-3">{user.email}</td>
                 <td className="p-3">
-                  <select className="rounded-xl border border-line bg-paper px-2 py-1" value={user.role} onChange={(event) => update(user, { role: event.target.value })}>
-                    <option value="customer">korisnik</option>
-                    <option value="business">biznis</option>
-                    <option value="admin">admin</option>
-                  </select>
+                  <ComboBox ariaLabel={`Uloga za ${user.name}`} value={user.role} onChange={(value) => update(user, { role: value })} options={[
+                    { value: "customer", label: "korisnik" },
+                    { value: "business", label: "biznis" },
+                    { value: "admin", label: "admin" },
+                  ]} />
                 </td>
                 <td className="p-3">{user.is_active ? "aktivan" : "isključen"}</td>
                 <td className="p-3 text-right">

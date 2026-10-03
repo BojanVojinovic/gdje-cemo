@@ -1,7 +1,7 @@
 "use client";
 
 import { seatsLabel, tableStateLabel, type FloorTable } from "@/lib/hospitality";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import { useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 
 const shapeClass: Record<string, string> = {
   round: "rounded-full",
@@ -39,6 +39,7 @@ export function FloorCanvas({
   backgroundUrl,
   selectedId,
   editable = false,
+  compact = false,
   onSelect,
   onChange,
 }: {
@@ -48,16 +49,32 @@ export function FloorCanvas({
   backgroundUrl?: string | null;
   selectedId?: number | null;
   editable?: boolean;
+  compact?: boolean;
   onSelect?: (id: number) => void;
   onChange?: (table: FloorTable) => void;
 }) {
-  return (
-    <div className="overflow-auto rounded-lg border border-line bg-paper">
+  const frame = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(compact ? 0 : 1);
+
+  useLayoutEffect(() => {
+    if (!compact || !frame.current) return;
+    const node = frame.current;
+    function measure() {
+      setScale(Math.min(1, node.clientWidth / width));
+    }
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [compact, width]);
+
+  const fitted = compact ? scale : 1;
+  const canvas = (
       <div
         className="relative"
         style={{
-          width,
-          height,
+          width: width * fitted,
+          height: height * fitted,
           backgroundImage: backgroundUrl ? `url(${backgroundUrl})` : undefined,
           backgroundSize: "cover",
           backgroundPosition: "center",
@@ -71,19 +88,19 @@ export function FloorCanvas({
               type="button"
               aria-pressed={selectedId === table.id}
               aria-label={`${table.name}, ${seatsLabel(table.capacity_min, table.capacity_max)}, ${tableStateLabel[state] ?? state}${table.zone ? `, ${table.zone}` : ""}`}
-              className={`absolute flex flex-col items-center justify-center border-2 px-1 text-center text-[11px] leading-tight ${shapeClass[table.shape] ?? shapeClass.square} ${stateClass[state] ?? stateClass.available}`}
+              className={`absolute flex flex-col items-center justify-center border-2 px-1 text-center leading-tight ${compact ? "text-[10px]" : "text-[11px]"} ${shapeClass[table.shape] ?? shapeClass.square} ${stateClass[state] ?? stateClass.available}`}
               style={{
-                left: table.position_x,
-                top: table.position_y,
-                width: table.width,
-                height: table.height,
+                left: table.position_x * fitted,
+                top: table.position_y * fitted,
+                width: table.width * fitted,
+                height: table.height * fitted,
                 transform: `rotate(${table.rotation}deg)`,
               }}
               onPointerDown={(event) => startDrag(event, table, editable, onSelect, onChange)}
             >
               <span className="font-medium" style={{ transform: `rotate(${-table.rotation}deg)` }}>{table.name}</span>
-              <span style={{ transform: `rotate(${-table.rotation}deg)` }}>{seatsLabel(table.capacity_min, table.capacity_max)}</span>
-              <span style={{ transform: `rotate(${-table.rotation}deg)` }}>{tableStateLabel[state] ?? state}</span>
+              {compact ? null : <span style={{ transform: `rotate(${-table.rotation}deg)` }}>{seatsLabel(table.capacity_min, table.capacity_max)}</span>}
+              {compact ? null : <span style={{ transform: `rotate(${-table.rotation}deg)` }}>{tableStateLabel[state] ?? state}</span>}
               {editable ? (
                 <span
                   role="presentation"
@@ -95,8 +112,17 @@ export function FloorCanvas({
           );
         })}
       </div>
-    </div>
   );
+
+  if (compact) {
+    return (
+      <div ref={frame} className="w-full max-w-md overflow-hidden rounded-lg border border-line bg-paper">
+        {canvas}
+      </div>
+    );
+  }
+
+  return <div className="overflow-auto rounded-lg border border-line bg-paper">{canvas}</div>;
 }
 
 function startDrag(

@@ -1,5 +1,6 @@
 "use client";
 
+import { ComboBox } from "@/components/combo-box";
 import { FloorCanvas, TableLegend } from "@/components/floor-canvas";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
@@ -163,20 +164,13 @@ export default function FloorPlanEditorPage() {
               </div>
               <p className="text-xs text-muted">{seatsLabel(selected.capacity_min, selected.capacity_max)}</p>
               <Field label="Oblik">
-                <select className={inputClass} value={selected.shape} onChange={(event) => patchLocal({ ...selected, shape: event.target.value })}>
-                  {shapes.map((shape) => <option key={shape} value={shape}>{tableShapeLabel[shape] ?? shape}</option>)}
-                </select>
+                <ComboBox value={selected.shape} onChange={(value) => patchLocal({ ...selected, shape: value })} options={shapes.map((shape) => ({ value: shape, label: tableShapeLabel[shape] ?? shape }))} />
               </Field>
               <Field label="Zona">
-                <select className={inputClass} value={selected.zone_id ?? ""} onChange={(event) => patchLocal({ ...selected, zone_id: event.target.value ? Number(event.target.value) : null })}>
-                  <option value="">Bez zone</option>
-                  {plan.zones.map((zone) => <option key={zone.id} value={zone.id}>{zone.name}</option>)}
-                </select>
+                <ComboBox value={selected.zone_id ? String(selected.zone_id) : ""} onChange={(value) => patchLocal({ ...selected, zone_id: value ? Number(value) : null })} options={[{ value: "", label: "Bez zone" }, ...plan.zones.map((zone) => ({ value: String(zone.id), label: zone.name }))]} />
               </Field>
               <Field label="Status">
-                <select className={inputClass} value={selected.status ?? "available"} onChange={(event) => patchLocal({ ...selected, status: event.target.value })}>
-                  {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
-                </select>
+                <ComboBox value={selected.status ?? "available"} onChange={(value) => patchLocal({ ...selected, status: value })} options={statuses.map((status) => ({ value: status, label: status }))} />
               </Field>
               <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={selected.is_active !== false} onChange={(event) => patchLocal({ ...selected, is_active: event.target.checked })} /> Aktivan</label>
               <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={selected.is_reservable !== false} onChange={(event) => patchLocal({ ...selected, is_reservable: event.target.checked })} /> Može se rezervisati</label>

@@ -3,7 +3,7 @@
 import { useAuth } from "@/lib/auth";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const links = [
   { href: "/places", label: "Mjesta" },
@@ -17,6 +17,15 @@ export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const dashboard = pathname.startsWith("/business") || pathname.startsWith("/admin");
+
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
 
   async function onLogout() {
     await logout();
@@ -53,20 +62,27 @@ export function SiteHeader() {
             )}
           </div>
           <button type="button" className="min-h-11 min-w-11 text-sm font-semibold md:hidden" aria-expanded={open} aria-label="Meni" onClick={() => setOpen((value) => !value)}>
-            {open ? "Zatvori" : "Meni"}
+            Meni
           </button>
         </div>
-        {open ? (
-          <div className="space-y-1 border-t border-line px-4 py-3 md:hidden">
+      </header>
+      {open ? (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <button type="button" className="absolute inset-0 bg-black/60" aria-label="Zatvori meni" onClick={() => setOpen(false)} />
+          <nav className="absolute inset-y-0 right-0 flex w-[min(20rem,88vw)] flex-col gap-1 overflow-y-auto border-l border-line bg-paper px-4 py-5" aria-label="Meni">
+            <button type="button" className="mb-2 min-h-11 self-end px-2 text-sm text-muted" onClick={() => setOpen(false)}>Zatvori</button>
             {links.map((link) => (
               <Link key={link.href} href={link.href} className="block min-h-11 py-2" onClick={() => setOpen(false)}>{link.label}</Link>
             ))}
             {user ? <Link href="/profile" className="block min-h-11 py-2" onClick={() => setOpen(false)}>Profil</Link> : <Link href="/login" className="block min-h-11 py-2" onClick={() => setOpen(false)}>Prijava</Link>}
+            {user?.role === "customer" ? <Link href="/business" className="block min-h-11 py-2" onClick={() => setOpen(false)}>Za partnere</Link> : null}
             {user?.role === "business" || user?.role === "admin" ? <Link href="/business" className="block min-h-11 py-2" onClick={() => setOpen(false)}>Biznis</Link> : null}
+            {user?.role === "admin" ? <Link href="/admin" className="block min-h-11 py-2" onClick={() => setOpen(false)}>Admin</Link> : null}
+            {!user ? <Link href="/register" className="block min-h-11 py-2" onClick={() => setOpen(false)}>Nalog</Link> : null}
             {user ? <button type="button" className="min-h-11 w-full text-left" onClick={onLogout}>Odjava</button> : null}
-          </div>
-        ) : null}
-      </header>
+          </nav>
+        </div>
+      ) : null}
       {dashboard ? null : <MobileNav pathname={pathname} />}
     </>
   );

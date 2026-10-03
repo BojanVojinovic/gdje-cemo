@@ -1,5 +1,6 @@
 "use client";
 
+import { ComboBox } from "@/components/combo-box";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -130,22 +131,18 @@ export default function ContentPage() {
       <form onSubmit={create} className="grid gap-3 rounded-lg border border-line p-4 md:grid-cols-2">
         <h2 className="font-serif text-2xl md:col-span-2">Nova stavka</h2>
         <Field label="Mjesto">
-          <select className={inputClass} value={form.venue_id} onChange={(event) => setForm({ ...form, venue_id: event.target.value })}>
-            {venues.map((venue) => <option key={venue.id} value={venue.id}>{venue.name}</option>)}
-          </select>
+          <ComboBox value={form.venue_id} onChange={(value) => setForm({ ...form, venue_id: value })} options={venues.map((venue) => ({ value: String(venue.id), label: venue.name }))} />
         </Field>
         <Field label="Vrsta">
-          <select className={inputClass} value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })}>
-            {types.map((type) => <option key={type} value={type}>{contentTypeLabel[type]}</option>)}
-          </select>
+          <ComboBox value={form.type} onChange={(value) => setForm({ ...form, type: value })} options={types.map((type) => ({ value: type, label: contentTypeLabel[type] }))} />
         </Field>
         <Field label="Naslov"><input required className={inputClass} value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></Field>
         <Field label="Objava">
-          <select className={inputClass} value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>
-            <option value="draft">Nacrt</option>
-            <option value="published">Odmah</option>
-            <option value="scheduled">Zakaži</option>
-          </select>
+          <ComboBox value={form.status} onChange={(value) => setForm({ ...form, status: value })} options={[
+            { value: "draft", label: "Nacrt" },
+            { value: "published", label: "Odmah" },
+            { value: "scheduled", label: "Zakaži" },
+          ]} />
         </Field>
         <Field label="Tekst" ><textarea className={inputClass + " min-h-24 py-2 md:col-span-2"} value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} /></Field>
         {form.status === "scheduled" ? <Field label="Zakazano"><input type="datetime-local" className={inputClass} value={form.scheduled_at} onChange={(event) => setForm({ ...form, scheduled_at: event.target.value })} /></Field> : null}
@@ -158,12 +155,12 @@ export default function ContentPage() {
             <Field label="Cijena"><input type="number" min={0} className={inputClass} value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} /></Field>
             <Field label="Kapacitet"><input type="number" min={1} className={inputClass} value={form.capacity} onChange={(event) => setForm({ ...form, capacity: event.target.value })} /></Field>
             <Field label="Prijava">
-              <select className={inputClass} value={form.registration_mode} onChange={(event) => setForm({ ...form, registration_mode: event.target.value })}>
-                <option value="none">Bez prijave</option>
-                <option value="registration">Prijava</option>
-                <option value="table_reservation">Rezervacija stola</option>
-                <option value="capacity">Po kapacitetu</option>
-              </select>
+              <ComboBox value={form.registration_mode} onChange={(value) => setForm({ ...form, registration_mode: value })} options={[
+                { value: "none", label: "Bez prijave" },
+                { value: "registration", label: "Prijava" },
+                { value: "table_reservation", label: "Rezervacija stola" },
+                { value: "capacity", label: "Po kapacitetu" },
+              ]} />
             </Field>
           </>
         ) : null}

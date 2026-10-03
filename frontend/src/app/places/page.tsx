@@ -1,5 +1,6 @@
 "use client";
 
+import { ComboBox, type ComboOption } from "@/components/combo-box";
 import { VenueGrid } from "@/components/venue-card";
 import { Button, EmptyState, Pagination, Skeleton, inputClass } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
@@ -69,83 +70,107 @@ function PlacesExplorer() {
   }
 
   const selectedAmenities = (params.get("amenities") ?? "").split(",").filter(Boolean);
+  const filtersActive = ["q", "city", "category", "price_level", "min_rating", "open", "verified", "amenities"].some((key) => params.get(key))
+    || ((params.get("sort") ?? "popular") !== "popular");
+  const categoryOptions: ComboOption[] = [
+    { value: "", label: "Sve" },
+    ...categories.flatMap((category) => [
+      { value: category.slug, label: category.name },
+      ...(category.children ?? []).map((child) => ({ value: child.slug, label: child.name, group: category.name })),
+    ]),
+  ];
+
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [filtersOpen]);
+
+  const filterBody = (
+    <div className="space-y-4">
+      <button type="button" className="min-h-9 rounded-full border border-line bg-paper px-3 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40" disabled={!filtersActive} onClick={() => { setFiltersOpen(false); router.push("/places"); }}>Poništi filtere</button>
+      <FilterGroup label="Pretraga">
+        <input className={inputClass} defaultValue={params.get("q") ?? ""} placeholder="Naziv ili adresa" onBlur={(event) => update({ q: event.target.value || null })} />
+      </FilterGroup>
+      <FilterGroup label="Grad">
+        <ComboBox ariaLabel="Grad" value={params.get("city") ?? ""} onChange={(value) => update({ city: value || null })} options={[{ value: "", label: "Svi" }, ...cities.map((city) => ({ value: city, label: city }))]} />
+      </FilterGroup>
+      <FilterGroup label="Kategorija">
+        <ComboBox ariaLabel="Kategorija" value={params.get("category") ?? ""} onChange={(value) => update({ category: value || null })} options={categoryOptions} />
+      </FilterGroup>
+      <FilterGroup label="Cijena">
+        <ComboBox ariaLabel="Cijena" value={params.get("price_level") ?? ""} onChange={(value) => update({ price_level: value || null })} options={[
+          { value: "", label: "Sve" },
+          { value: "1", label: "€" },
+          { value: "2", label: "€€" },
+          { value: "3", label: "€€€" },
+          { value: "4", label: "€€€€" },
+        ]} />
+      </FilterGroup>
+      <FilterGroup label="Ocjena">
+        <ComboBox ariaLabel="Ocjena" value={params.get("min_rating") ?? ""} onChange={(value) => update({ min_rating: value || null })} options={[
+          { value: "", label: "Sve" },
+          { value: "3", label: "3+" },
+          { value: "4", label: "4+" },
+          { value: "4.5", label: "4.5+" },
+        ]} />
+      </FilterGroup>
+      <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={params.get("open") === "1"} onChange={(event) => update({ open: event.target.checked ? "1" : null })} /> Trenutno otvoreno</label>
+      <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={params.get("verified") === "1"} onChange={(event) => update({ verified: event.target.checked ? "1" : null })} /> Samo provjerena</label>
+      <FilterGroup label="Sadržaji">
+        <div className="max-h-48 space-y-2 overflow-auto pr-1">
+          {amenities.map((amenity) => {
+            const active = selectedAmenities.includes(amenity.slug);
+            return (
+              <label key={amenity.id} className="flex min-h-8 items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={active}
+                  onChange={() => {
+                    const next = active ? selectedAmenities.filter((slug) => slug !== amenity.slug) : [...selectedAmenities, amenity.slug];
+                    update({ amenities: next.join(",") || null });
+                  }}
+                />
+                {amenity.name}
+              </label>
+            );
+          })}
+        </div>
+      </FilterGroup>
+    </div>
+  );
 
   return (
     <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[260px_1fr]">
       <div className="lg:hidden">
-        <Button variant="secondary" onClick={() => setFiltersOpen((value) => !value)}>{filtersOpen ? "Sakrij filtere" : "Filteri"}</Button>
+        <Button variant="secondary" onClick={() => setFiltersOpen(true)}>Filteri</Button>
       </div>
-      <aside className={`${filtersOpen ? "block" : "hidden"} space-y-4 border border-line bg-paper p-4 lg:block`}>
-        <FilterGroup label="Pretraga">
-          <input className={inputClass} defaultValue={params.get("q") ?? ""} placeholder="Naziv ili adresa" onBlur={(event) => update({ q: event.target.value || null })} />
-        </FilterGroup>
-        <FilterGroup label="Grad">
-          <select className={inputClass} value={params.get("city") ?? ""} onChange={(event) => update({ city: event.target.value || null })}>
-            <option value="">Svi</option>
-            {cities.map((city) => <option key={city}>{city}</option>)}
-          </select>
-        </FilterGroup>
-        <FilterGroup label="Kategorija">
-          <select className={inputClass} value={params.get("category") ?? ""} onChange={(event) => update({ category: event.target.value || null })}>
-            <option value="">Sve</option>
-            {categories.map((category) => (
-              <optgroup key={category.id} label={category.name}>
-                <option value={category.slug}>{category.name}</option>
-                {category.children?.map((child) => <option key={child.id} value={child.slug}>{child.name}</option>)}
-              </optgroup>
-            ))}
-          </select>
-        </FilterGroup>
-        <FilterGroup label="Cijena">
-          <select className={inputClass} value={params.get("price_level") ?? ""} onChange={(event) => update({ price_level: event.target.value || null })}>
-            <option value="">Sve</option>
-            <option value="1">€</option>
-            <option value="2">€€</option>
-            <option value="3">€€€</option>
-            <option value="4">€€€€</option>
-          </select>
-        </FilterGroup>
-        <FilterGroup label="Ocjena">
-          <select className={inputClass} value={params.get("min_rating") ?? ""} onChange={(event) => update({ min_rating: event.target.value || null })}>
-            <option value="">Sve</option>
-            <option value="3">3+</option>
-            <option value="4">4+</option>
-            <option value="4.5">4.5+</option>
-          </select>
-        </FilterGroup>
-        <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={params.get("open") === "1"} onChange={(event) => update({ open: event.target.checked ? "1" : null })} /> Trenutno otvoreno</label>
-        <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={params.get("verified") === "1"} onChange={(event) => update({ verified: event.target.checked ? "1" : null })} /> Samo provjerena</label>
-        <FilterGroup label="Sadržaji">
-          <div className="max-h-48 space-y-2 overflow-auto pr-1">
-            {amenities.map((amenity) => {
-              const active = selectedAmenities.includes(amenity.slug);
-              return (
-                <label key={amenity.id} className="flex min-h-8 items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={active}
-                    onChange={() => {
-                      const next = active ? selectedAmenities.filter((slug) => slug !== amenity.slug) : [...selectedAmenities, amenity.slug];
-                      update({ amenities: next.join(",") || null });
-                    }}
-                  />
-                  {amenity.name}
-                </label>
-              );
-            })}
+      {filtersOpen ? (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-paper px-4 py-4 lg:hidden">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-serif text-3xl">Filteri</h2>
+            <button type="button" className="min-h-11 px-2 text-sm text-muted" onClick={() => setFiltersOpen(false)}>Zatvori</button>
           </div>
-        </FilterGroup>
-      </aside>
+          {filterBody}
+          <Button className="mt-6 w-full" onClick={() => setFiltersOpen(false)}>Prikaži mjesta</Button>
+        </div>
+      ) : null}
+      <aside className="hidden border border-line bg-paper p-4 lg:block">{filterBody}</aside>
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="font-serif text-4xl">Mjesta</h1>
-          <select className={inputClass + " max-w-48"} value={params.get("sort") ?? "popular"} onChange={(event) => update({ sort: event.target.value })} aria-label="Sortiranje">
-            <option value="popular">Popularno</option>
-            <option value="rating">Ocjena</option>
-            <option value="reviews">Broj recenzija</option>
-            <option value="newest">Najnovije</option>
-            <option value="name">Naziv</option>
-          </select>
+          <div className="w-full max-w-48">
+            <ComboBox ariaLabel="Sortiranje" value={params.get("sort") ?? "popular"} onChange={(value) => update({ sort: value })} options={[
+              { value: "popular", label: "Popularno" },
+              { value: "rating", label: "Ocjena" },
+              { value: "reviews", label: "Broj recenzija" },
+              { value: "newest", label: "Najnovije" },
+              { value: "name", label: "Naziv" },
+            ]} />
+          </div>
         </div>
         {loading ? (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -155,7 +180,7 @@ function PlacesExplorer() {
         ) : null}
         {error ? <p className="rounded-lg bg-paper p-6 text-coral">{error}</p> : null}
         {!loading && !error && venues.length === 0 ? (
-          <EmptyState title="Nema mjesta za ovu pretragu." body="Promijenite grad, kategoriju ili ocjenu." action={<Button onClick={() => router.push("/places")}>Poništi filtere</Button>} />
+          <EmptyState title="Nema mjesta za ovu pretragu." body="Promijenite grad, kategoriju ili ocjenu." />
         ) : null}
         {!loading && venues.length > 0 ? <VenueGrid venues={venues} /> : null}
         {meta ? <Pagination page={meta.current_page} lastPage={meta.last_page} onPage={(page) => update({ page: String(page) })} /> : null}

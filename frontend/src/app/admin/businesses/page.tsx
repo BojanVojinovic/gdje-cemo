@@ -1,5 +1,6 @@
 "use client";
 
+import { ComboBox } from "@/components/combo-box";
 import { Button, EmptyState, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -52,12 +53,14 @@ export default function AdminBusinessesPage() {
   return (
     <div className="space-y-4">
       <h1 className="font-serif text-4xl">Biznisi</h1>
-      <select className={inputClass + " max-w-xs"} value={status} onChange={(event) => { setStatus(event.target.value); void load(event.target.value); }}>
-        <option value="">Svi statusi</option>
-        <option value="pending">Na čekanju</option>
-        <option value="approved">Odobreni</option>
-        <option value="rejected">Odbijeni</option>
-      </select>
+      <div className="max-w-xs">
+        <ComboBox ariaLabel="Status biznisa" value={status} onChange={(value) => { setStatus(value); void load(value); }} options={[
+          { value: "", label: "Svi statusi" },
+          { value: "pending", label: "Na čekanju" },
+          { value: "approved", label: "Odobreni" },
+          { value: "rejected", label: "Odbijeni" },
+        ]} />
+      </div>
       {rows.length === 0 ? <EmptyState title="Nema biznisa." body="Novi zahtjevi će se pojaviti ovdje." /> : null}
       <ul className="space-y-3">
         {rows.map((row) => (

@@ -1,5 +1,6 @@
 "use client";
 
+import { ComboBox } from "@/components/combo-box";
 import { FloorCanvas } from "@/components/floor-canvas";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
@@ -82,9 +83,7 @@ export default function ReservationsPage() {
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Datum"><input type="date" className={inputClass} value={date} onChange={(event) => setDate(event.target.value)} /></Field>
         <Field label="Mjesto">
-          <select className={inputClass} value={venueId ?? ""} onChange={(event) => setVenueId(Number(event.target.value))}>
-            {venues.map((venue) => <option key={venue.id} value={venue.id}>{venue.name}</option>)}
-          </select>
+          <ComboBox value={venueId ? String(venueId) : ""} onChange={(value) => setVenueId(Number(value))} options={venues.map((venue) => ({ value: String(venue.id), label: venue.name }))} />
         </Field>
       </div>
       {view === "floor" && plan ? <FloorCanvas tables={plan.tables} width={plan.floor_plan.canvas_width} height={plan.floor_plan.canvas_height} backgroundUrl={plan.floor_plan.background_url} /> : null}
@@ -128,10 +127,7 @@ export default function ReservationsPage() {
       }}>
         <h2 className="font-serif text-2xl">Dolazak bez rezervacije</h2>
         <Field label="Sto">
-          <select required className={inputClass} value={walkIn.table_id} onChange={(event) => setWalkIn({ ...walkIn, table_id: event.target.value })} onFocus={() => { if (token && venueId) void api<FloorPlanPayload>(`/venues/${venueId}/floor-plan`, { token }).then((response) => setPlan(response.data)); }}>
-            <option value="">Izaberite</option>
-            {plan?.tables.map((table) => <option key={table.id} value={table.id}>{table.name}</option>)}
-          </select>
+          <ComboBox value={walkIn.table_id} onChange={(value) => setWalkIn({ ...walkIn, table_id: value })} options={[{ value: "", label: "Izaberite" }, ...(plan?.tables.map((table) => ({ value: String(table.id), label: table.name })) ?? [])]} />
         </Field>
         <Field label="Gostiju"><input type="number" min={1} className={inputClass} value={walkIn.party_size} onChange={(event) => setWalkIn({ ...walkIn, party_size: Number(event.target.value) })} /></Field>
         <Field label="Ime"><input className={inputClass} value={walkIn.guest_name} onChange={(event) => setWalkIn({ ...walkIn, guest_name: event.target.value })} /></Field>

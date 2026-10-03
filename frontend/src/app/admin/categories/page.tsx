@@ -1,5 +1,6 @@
 "use client";
 
+import { ComboBox } from "@/components/combo-box";
 import { Button, EmptyState, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -55,10 +56,7 @@ export default function AdminCategoriesPage() {
       <form onSubmit={create} className="grid gap-3 rounded-lg border border-line bg-paper p-4 md:grid-cols-[1fr_1fr_auto]">
         <Field label="Naziv"><input className={inputClass} value={name} onChange={(event) => setName(event.target.value)} required /></Field>
         <Field label="Roditelj">
-          <select className={inputClass} value={parentId} onChange={(event) => setParentId(event.target.value)}>
-            <option value="">Glavna kategorija</option>
-            {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-          </select>
+          <ComboBox value={parentId} onChange={setParentId} options={[{ value: "", label: "Glavna kategorija" }, ...categories.map((category) => ({ value: String(category.id), label: category.name }))]} />
         </Field>
         <div className="self-end"><Button type="submit">Dodaj</Button></div>
       </form>

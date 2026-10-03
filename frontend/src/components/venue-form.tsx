@@ -1,5 +1,6 @@
 "use client";
 
+import { ComboBox } from "@/components/combo-box";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -126,24 +127,13 @@ export function VenueForm({ venue }: { venue?: Venue }) {
   return (
     <form onSubmit={submit} className="grid gap-3 rounded-lg border border-line bg-paper p-5 md:grid-cols-2">
       <Field label="Biznis">
-        <select className={inputClass} required value={form.business_id} onChange={(event) => setForm({ ...form, business_id: event.target.value })}>
-          <option value="">Odaberite</option>
-          {businesses.map((business) => (
-            <option key={business.id} value={business.id}>{business.name}</option>
-          ))}
-        </select>
+        <ComboBox value={form.business_id} onChange={(value) => setForm({ ...form, business_id: value })} options={[{ value: "", label: "Odaberite" }, ...businesses.map((business) => ({ value: String(business.id), label: business.name }))]} />
       </Field>
       <Field label="Kategorija">
-        <select className={inputClass} required value={form.category_id} onChange={(event) => setForm({ ...form, category_id: event.target.value, subcategory_id: "" })}>
-          <option value="">Odaberite</option>
-          {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-        </select>
+        <ComboBox value={form.category_id} onChange={(value) => setForm({ ...form, category_id: value, subcategory_id: "" })} options={[{ value: "", label: "Odaberite" }, ...categories.map((category) => ({ value: String(category.id), label: category.name }))]} />
       </Field>
       <Field label="Potkategorija">
-        <select className={inputClass} value={form.subcategory_id} onChange={(event) => setForm({ ...form, subcategory_id: event.target.value })}>
-          <option value="">Nema</option>
-          {selected?.children?.map((child) => <option key={child.id} value={child.id}>{child.name}</option>)}
-        </select>
+        <ComboBox value={form.subcategory_id} onChange={(value) => setForm({ ...form, subcategory_id: value })} options={[{ value: "", label: "Nema" }, ...(selected?.children?.map((child) => ({ value: String(child.id), label: child.name })) ?? [])]} />
       </Field>
       <Field label="Naziv"><input className={inputClass} required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></Field>
       <div className="md:col-span-2">
@@ -153,9 +143,12 @@ export function VenueForm({ venue }: { venue?: Venue }) {
       <Field label="Grad"><input className={inputClass} required value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} /></Field>
       <Field label="Država"><input className={inputClass} required value={form.country} onChange={(event) => setForm({ ...form, country: event.target.value })} /></Field>
       <Field label="Cijena">
-        <select className={inputClass} value={form.price_level} onChange={(event) => setForm({ ...form, price_level: event.target.value })}>
-          <option value="1">€</option><option value="2">€€</option><option value="3">€€€</option><option value="4">€€€€</option>
-        </select>
+        <ComboBox value={form.price_level} onChange={(value) => setForm({ ...form, price_level: value })} options={[
+          { value: "1", label: "€" },
+          { value: "2", label: "€€" },
+          { value: "3", label: "€€€" },
+          { value: "4", label: "€€€€" },
+        ]} />
       </Field>
       <Field label="Geografska širina"><input className={inputClass} required value={form.latitude} onChange={(event) => setForm({ ...form, latitude: event.target.value })} /></Field>
       <Field label="Geografska dužina"><input className={inputClass} required value={form.longitude} onChange={(event) => setForm({ ...form, longitude: event.target.value })} /></Field>
@@ -166,10 +159,10 @@ export function VenueForm({ venue }: { venue?: Venue }) {
       <Field label="Facebook"><input className={inputClass} value={form.facebook} onChange={(event) => setForm({ ...form, facebook: event.target.value })} /></Field>
       <Field label="TikTok"><input className={inputClass} value={form.tiktok} onChange={(event) => setForm({ ...form, tiktok: event.target.value })} /></Field>
       <Field label="Status">
-        <select className={inputClass} value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>
-          <option value="draft">Nacrt</option>
-          <option value="published">Objavljeno</option>
-        </select>
+        <ComboBox value={form.status} onChange={(value) => setForm({ ...form, status: value })} options={[
+          { value: "draft", label: "Nacrt" },
+          { value: "published", label: "Objavljeno" },
+        ]} />
       </Field>
       <fieldset className="md:col-span-2">
         <legend className="mb-2 text-sm font-medium">Sadržaji</legend>

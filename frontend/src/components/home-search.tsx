@@ -1,5 +1,6 @@
 "use client";
 
+import { ComboBox } from "@/components/combo-box";
 import type { Category } from "@/types";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -33,20 +34,8 @@ export function HomeSearch({
       <div className="grid gap-2 md:grid-cols-[1.5fr_1fr_1fr_auto]">
         <label className="sr-only" htmlFor="home-q">Pretraga</label>
         <input id="home-q" value={q} onChange={(event) => setQ(event.target.value)} placeholder="Restoran, kafa, bar, ulica…" className="min-h-12 rounded-xl bg-void px-4 text-base text-ink" />
-        <label className="sr-only" htmlFor="home-city">Grad</label>
-        <select id="home-city" value={city} onChange={(event) => setCity(event.target.value)} className="min-h-12 rounded-xl bg-void px-3 text-ink">
-          <option value="">Svi gradovi</option>
-          {[defaultCity, ...cities.filter((item) => item !== defaultCity)].map((item) => (
-            <option key={item} value={item}>{item}</option>
-          ))}
-        </select>
-        <label className="sr-only" htmlFor="home-category">Kategorija</label>
-        <select id="home-category" value={category} onChange={(event) => setCategory(event.target.value)} className="min-h-12 rounded-xl bg-void px-3 text-ink">
-          <option value="">Sve kategorije</option>
-          {categories.map((item) => (
-            <option key={item.id} value={item.slug}>{item.name}</option>
-          ))}
-        </select>
+        <ComboBox id="home-city" ariaLabel="Grad" value={city} onChange={setCity} placeholder="Svi gradovi" options={[{ value: "", label: "Svi gradovi" }, ...[defaultCity, ...cities.filter((item) => item !== defaultCity)].filter(Boolean).map((item) => ({ value: item, label: item }))]} />
+        <ComboBox id="home-category" ariaLabel="Kategorija" value={category} onChange={setCategory} placeholder="Sve kategorije" options={[{ value: "", label: "Sve kategorije" }, ...categories.map((item) => ({ value: item.slug, label: item.name }))]} />
         <button type="submit" className="min-h-12 rounded-full bg-sea px-6 font-semibold text-snow">Traži</button>
       </div>
       {focused && categories.length ? (

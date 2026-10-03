@@ -1,5 +1,6 @@
 "use client";
 
+import { ComboBox } from "@/components/combo-box";
 import { Button, EmptyState, Field, Modal, Stars, inputClass, useToast } from "@/components/ui";
 import { api, ApiError, fieldError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -103,9 +104,7 @@ export function ReviewSection({
 
       <form onSubmit={submit} className="space-y-3 rounded-lg border border-line bg-paper p-4">
         <Field label="Ocjena">
-          <select className={inputClass} value={rating} onChange={(event) => setRating(Number(event.target.value))}>
-            {[5, 4, 3, 2, 1].map((score) => <option key={score} value={score}>{score}</option>)}
-          </select>
+          <ComboBox value={String(rating)} onChange={(value) => setRating(Number(value))} options={[5, 4, 3, 2, 1].map((score) => ({ value: String(score), label: String(score) }))} />
         </Field>
         <Field label="Utisak" error={error ?? undefined}>
           <textarea className={inputClass + " min-h-28 py-3"} value={body} onChange={(event) => setBody(event.target.value)} placeholder="Šta vrijedi znati prije dolaska?" />
@@ -189,7 +188,7 @@ function EditReviewModal({ review, onClose, onSaved }: { review: Review | null; 
   return (
     <Modal open={!!review} title="Izmjena recenzije" onClose={onClose}>
       <form onSubmit={save} className="space-y-3">
-        <Field label="Ocjena"><select className={inputClass} value={rating} onChange={(event) => setRating(Number(event.target.value))}>{[5, 4, 3, 2, 1].map((score) => <option key={score}>{score}</option>)}</select></Field>
+        <Field label="Ocjena"><ComboBox value={String(rating)} onChange={(value) => setRating(Number(value))} options={[5, 4, 3, 2, 1].map((score) => ({ value: String(score), label: String(score) }))} /></Field>
         <Field label="Tekst"><textarea className={inputClass + " min-h-28 py-3"} value={body} onChange={(event) => setBody(event.target.value)} /></Field>
         <Button type="submit" loading={loading}>Sačuvaj</Button>
       </form>
@@ -234,14 +233,14 @@ function ReportInline({ type, id }: { type: string; id: number }) {
       <Modal open={open} title="Prijava sadržaja" onClose={() => setOpen(false)}>
         <form onSubmit={submit} className="space-y-3">
           <Field label="Razlog">
-            <select className={inputClass} value={reason} onChange={(event) => setReason(event.target.value)}>
-              <option value="spam">Spam</option>
-              <option value="inappropriate">Neprikladno</option>
-              <option value="misleading">Zavaravajuće</option>
-              <option value="incorrect_information">Netačne informacije</option>
-              <option value="harassment">Uznemiravanje</option>
-              <option value="other">Drugo</option>
-            </select>
+            <ComboBox value={reason} onChange={setReason} options={[
+              { value: "spam", label: "Spam" },
+              { value: "inappropriate", label: "Neprikladno" },
+              { value: "misleading", label: "Zavaravajuće" },
+              { value: "incorrect_information", label: "Netačne informacije" },
+              { value: "harassment", label: "Uznemiravanje" },
+              { value: "other", label: "Drugo" },
+            ]} />
           </Field>
           <Field label="Opis"><textarea className={inputClass + " min-h-24 py-3"} value={description} onChange={(event) => setDescription(event.target.value)} /></Field>
           <Button type="submit" loading={loading}>Pošalji</Button>

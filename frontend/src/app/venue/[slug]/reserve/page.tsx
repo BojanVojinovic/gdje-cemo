@@ -1,5 +1,6 @@
 "use client";
 
+import { ComboBox } from "@/components/combo-box";
 import { FloorCanvas, TableLegend } from "@/components/floor-canvas";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
@@ -26,6 +27,10 @@ export default function ReservePage() {
   const [venueId, setVenueId] = useState<number | null>(null);
   const [name, setName] = useState("");
   const [plan, setPlan] = useState<FloorPlanPayload | null>(null);
+  useEffect(() => {
+    if (ready && !user) router.replace("/login");
+  }, [ready, user, router]);
+
   const [date, setDate] = useState("");
   const [time, setTime] = useState("19:00");
   const [party, setParty] = useState(2);
@@ -114,6 +119,9 @@ export default function ReservePage() {
   const chosenTable = availability?.tables.find((table) => table.id === selected);
   const chosenCombo = availability?.combinations.find((row) => row.id === combination);
 
+  if (!ready) return <p className="mx-auto max-w-5xl px-4 py-8 text-sm text-muted">Učitavanje…</p>;
+  if (!user) return <p className="mx-auto max-w-5xl px-4 py-8 text-sm text-muted">Prijava je potrebna.</p>;
+
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 pb-28">
       <Link href={`/venue/${params.slug}`} className="text-sm text-sea">{name || "Mjesto"}</Link>
@@ -126,10 +134,7 @@ export default function ReservePage() {
         <Field label="Vrijeme"><input required type="time" className={inputClass} value={time} onChange={(event) => setTime(event.target.value)} /></Field>
         <Field label="Broj gostiju"><input required type="number" min={1} max={40} className={inputClass} value={party} onChange={(event) => setParty(Number(event.target.value))} /></Field>
         <Field label="Zona">
-          <select className={inputClass} value={zoneId} onChange={(event) => setZoneId(event.target.value)}>
-            <option value="">Sve zone</option>
-            {plan?.zones.map((zone) => <option key={zone.id} value={zone.id}>{zone.name}</option>)}
-          </select>
+          <ComboBox value={zoneId} onChange={setZoneId} options={[{ value: "", label: "Sve zone" }, ...(plan?.zones.map((zone) => ({ value: String(zone.id), label: zone.name })) ?? [])]} />
         </Field>
         <Button type="submit" className="sm:col-span-4 sm:w-fit">Prikaži slobodne stolove</Button>
       </form>

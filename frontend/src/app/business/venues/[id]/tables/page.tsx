@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Field, inputClass, useToast } from "@/components/ui";
+import { ComboBox } from "@/components/combo-box";
+import { Button, Field, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { seatsLabel, type FloorPlanPayload, type FloorTable } from "@/lib/hospitality";
@@ -52,10 +53,7 @@ export default function TablesPage() {
                 if (name) await save(table, { name });
               }}>Preimenuj</Button>
               <Field label="Zona">
-                <select className={inputClass} value={table.zone_id ?? ""} onChange={(event) => void save(table, { zone_id: event.target.value ? Number(event.target.value) : null })}>
-                  <option value="">Bez zone</option>
-                  {plan.zones.map((zone) => <option key={zone.id} value={zone.id}>{zone.name}</option>)}
-                </select>
+                <ComboBox value={table.zone_id ? String(table.zone_id) : ""} onChange={(value) => void save(table, { zone_id: value ? Number(value) : null })} options={[{ value: "", label: "Bez zone" }, ...plan.zones.map((zone) => ({ value: String(zone.id), label: zone.name }))]} />
               </Field>
               <Button variant="ghost" onClick={async () => { if (!token) return; await api(`/business/tables/${table.id}/qr`, { method: "POST", token }); toast("QR kod je osvježen."); await load(); }}>Novi QR</Button>
             </div>
