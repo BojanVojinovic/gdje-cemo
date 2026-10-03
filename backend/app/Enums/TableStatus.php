@@ -1,0 +1,14 @@
+<?php
+
+namespace App\Enums;
+
+enum TableStatus: string
+{
+    case Available = 'available';
+    case Reserved = 'reserved';
+    case Occupied = 'occupied';
+    case Ordering = 'ordering';
+    case Unavailable = 'unavailable';
+    case Maintenance = 'maintenance';
+    case Closed = 'closed';
+}

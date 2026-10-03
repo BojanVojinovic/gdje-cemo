@@ -1,0 +1,6 @@
+.DS_Store
+.railway
+.cursor
+.env
+.env.*
+!.env.example

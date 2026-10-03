@@ -1,0 +1,15 @@
+.git
+.railway
+.cursor
+frontend/node_modules
+frontend/.next
+backend/vendor
+backend/node_modules
+backend/.env
+backend/.env.*
+backend/storage/logs
+backend/storage/framework/cache/data
+backend/storage/framework/sessions
+backend/storage/framework/views
+backend/tests
+backend/phpunit.xml

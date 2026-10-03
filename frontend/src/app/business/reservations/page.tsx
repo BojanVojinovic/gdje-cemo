@@ -1,0 +1,142 @@
+"use client";
+
+import { FloorCanvas } from "@/components/floor-canvas";
+import { Button, Field, inputClass, useToast } from "@/components/ui";
+import { api, ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { reservationStatusLabel, when, type FloorPlanPayload } from "@/lib/hospitality";
+import type { Venue } from "@/types";
+import { useEffect, useState } from "react";
+
+type ReservationRow = {
+  id: number;
+  party_size: number;
+  start_at: string;
+  end_at: string;
+  status: string;
+  source: string;
+  table_name: string;
+  zone_name: string | null;
+  guest_name: string | null;
+  guest_phone: string | null;
+  notes: string | null;
+  venue?: { id: number; name: string; slug: string };
+};
+
+export default function ReservationsPage() {
+  const { token } = useAuth();
+  const toast = useToast();
+  const [rows, setRows] = useState<ReservationRow[]>([]);
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [view, setView] = useState<"list" | "day" | "floor">("list");
+  const [venueId, setVenueId] = useState<number | null>(null);
+  const [plan, setPlan] = useState<FloorPlanPayload | null>(null);
+  const [walkIn, setWalkIn] = useState({ table_id: "", party_size: 2, guest_name: "" });
+
+  async function load() {
+    if (!token) return;
+    const query = new URLSearchParams();
+    if (date && view !== "list") query.set("date", date);
+    if (venueId) query.set("venue_id", String(venueId));
+    const response = await api<ReservationRow[]>(`/business/reservations?${query.toString()}`, { token });
+    setRows(response.data);
+  }
+
+  useEffect(() => {
+    if (!token) return;
+    api<Venue[]>("/business/venues", { token }).then((response) => {
+      setVenues(response.data);
+      setVenueId((current) => current ?? response.data[0]?.id ?? null);
+    }).catch(() => undefined);
+  }, [token]);
+
+  useEffect(() => { void load().catch(() => undefined); }, [token, date, view, venueId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!token || !venueId) return;
+    api<FloorPlanPayload>(`/venues/${venueId}/floor-plan`, { token }).then((response) => setPlan(response.data)).catch(() => undefined);
+  }, [token, venueId, view]);
+
+  async function setStatus(id: number, status: string) {
+    if (!token) return;
+    try {
+      await api(`/business/reservations/${id}/status`, { method: "POST", token, body: { status } });
+      toast("Status rezervacije je sačuvan.");
+      await load();
+    } catch (reason) {
+      toast(reason instanceof ApiError ? reason.message : "Status nije sačuvan.");
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <h1 className="font-serif text-4xl">Rezervacije</h1>
+      <div className="flex flex-wrap gap-2">
+        {(["list", "day", "floor"] as const).map((item) => (
+          <button key={item} type="button" onClick={() => setView(item)} className={`min-h-11 rounded-full px-4 text-sm ${view === item ? "bg-sea text-snow" : "bg-paper"}`}>
+            {{ list: "Lista", day: "Dan", floor: "Tlocrt" }[item]}
+          </button>
+        ))}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label="Datum"><input type="date" className={inputClass} value={date} onChange={(event) => setDate(event.target.value)} /></Field>
+        <Field label="Mjesto">
+          <select className={inputClass} value={venueId ?? ""} onChange={(event) => setVenueId(Number(event.target.value))}>
+            {venues.map((venue) => <option key={venue.id} value={venue.id}>{venue.name}</option>)}
+          </select>
+        </Field>
+      </div>
+      {view === "floor" && plan ? <FloorCanvas tables={plan.tables} width={plan.floor_plan.canvas_width} height={plan.floor_plan.canvas_height} backgroundUrl={plan.floor_plan.background_url} /> : null}
+      <ul className="space-y-3">
+        {rows.map((row) => (
+          <li key={row.id} className="rounded-lg border border-line bg-paper p-4">
+            <p className="font-medium">{when(row.start_at)} · {row.table_name} · {row.party_size} gostiju</p>
+            <p className="text-sm text-muted">{row.venue?.name} · {reservationStatusLabel[row.status] ?? row.status} · {row.source === "walk_in" ? "bez rezervacije" : "online"}{row.zone_name ? ` · ${row.zone_name}` : ""}</p>
+            {row.guest_name ? <p className="text-sm">{row.guest_name}{row.guest_phone ? ` · ${row.guest_phone}` : ""}</p> : null}
+            {row.notes ? <p className="text-sm text-muted">{row.notes}</p> : null}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {row.status === "pending" ? <Button onClick={() => void setStatus(row.id, "confirmed")}>Potvrdi</Button> : null}
+              {row.status === "pending" ? <Button variant="secondary" onClick={() => void setStatus(row.id, "rejected")}>Odbij</Button> : null}
+              {row.status === "confirmed" ? <Button onClick={() => void setStatus(row.id, "seated")}>Smjesti</Button> : null}
+              {row.status === "confirmed" || row.status === "seated" ? <Button variant="secondary" onClick={() => void setStatus(row.id, "no_show")}>Nije došao</Button> : null}
+              {row.status === "seated" ? <Button variant="secondary" onClick={() => void setStatus(row.id, "completed")}>Zatvori</Button> : null}
+              {row.status === "pending" || row.status === "confirmed" ? <Button variant="ghost" onClick={() => void setStatus(row.id, "cancelled")}>Otkaži</Button> : null}
+            </div>
+          </li>
+        ))}
+      </ul>
+      {view === "day" ? (
+        <section className="space-y-2">
+          <h2 className="font-serif text-2xl">Raspored stolova</h2>
+          {(plan?.tables ?? []).map((table) => {
+            const hit = rows.find((row) => row.table_name === table.name && ["pending", "confirmed", "seated"].includes(row.status));
+            return <p key={table.id} className="text-sm">{table.name} · {hit ? `${reservationStatusLabel[hit.status]} ${when(hit.start_at)}` : "Slobodan"}</p>;
+          })}
+        </section>
+      ) : null}
+      <form className="space-y-3 rounded-lg border border-line p-4" onSubmit={async (event) => {
+        event.preventDefault();
+        if (!token || !venueId) return;
+        try {
+          await api(`/business/venues/${venueId}/walk-ins`, { method: "POST", token, body: { ...walkIn, table_id: Number(walkIn.table_id), party_size: Number(walkIn.party_size) } });
+          toast("Gost je smješten.");
+          await load();
+        } catch (reason) {
+          toast(reason instanceof ApiError ? (reason.errors?.table_id?.[0] || reason.message) : "Gost nije smješten.");
+        }
+      }}>
+        <h2 className="font-serif text-2xl">Dolazak bez rezervacije</h2>
+        <Field label="Sto">
+          <select required className={inputClass} value={walkIn.table_id} onChange={(event) => setWalkIn({ ...walkIn, table_id: event.target.value })} onFocus={() => { if (token && venueId) void api<FloorPlanPayload>(`/venues/${venueId}/floor-plan`, { token }).then((response) => setPlan(response.data)); }}>
+            <option value="">Izaberite</option>
+            {plan?.tables.map((table) => <option key={table.id} value={table.id}>{table.name}</option>)}
+          </select>
+        </Field>
+        <Field label="Gostiju"><input type="number" min={1} className={inputClass} value={walkIn.party_size} onChange={(event) => setWalkIn({ ...walkIn, party_size: Number(event.target.value) })} /></Field>
+        <Field label="Ime"><input className={inputClass} value={walkIn.guest_name} onChange={(event) => setWalkIn({ ...walkIn, guest_name: event.target.value })} /></Field>
+        <Button type="submit">Smjesti gosta</Button>
+      </form>
+    </div>
+  );
+}

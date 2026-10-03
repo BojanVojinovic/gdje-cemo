@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #f4f7fb;
+  --color-cream: #07090f;
+  --color-paper: #121722;
+  --color-void: #05070c;
+  --color-snow: #f7f9ff;
+  --color-line: #243044;
+  --color-sea: #3b6cff;
+  --color-sea-deep: #2a52d6;
+  --color-coral: #ff5d6c;
+  --color-gold: #e2b657;
+  --color-muted: #93a0b8;
+  --color-success: #3dbe8c;
+  --color-warning: #e0a04a;
+  --font-sans: var(--font-source), "Source Sans 3", sans-serif;
+  --font-serif: var(--font-fraunces), "Fraunces", serif;
+  --shadow-card: 0 16px 40px rgb(0 0 0 / 0.28);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-sea);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: #2a4eb8;
+  color: #f7f9ff;
+}
+
+h1, h2, .font-serif {
+  letter-spacing: -0.03em;
+}
+
+.tech-glow {
+  background-image:
+    radial-gradient(520px 260px at 12% 18%, rgb(59 108 255 / 0.38), transparent 62%),
+    radial-gradient(420px 220px at 88% 8%, rgb(120 168 255 / 0.22), transparent 58%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-pulse {
+    animation: none;
+  }
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  font-family: inherit;
+  background: #101722;
+}
