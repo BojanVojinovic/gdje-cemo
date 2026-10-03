@@ -2,7 +2,7 @@ FROM php:8.4-apache
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        git unzip libpng-dev libjpeg62-turbo-dev libfreetype6-dev libzip-dev \
+        git unzip libpng-dev libjpeg62-turbo-dev libfreetype6-dev libzip-dev libonig-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" pdo_mysql mbstring zip gd bcmath \
     && a2enmod rewrite \
