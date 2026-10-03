@@ -4,3 +4,25 @@
 .env
 .env.*
 !.env.example
+
+# Local secrets, installs, and generated files. These stay on this machine.
+backend/.env
+backend/.env.*
+!backend/.env.example
+backend/.phpunit.result.cache
+backend/.phpunit.cache
+backend/vendor
+backend/database/*.sqlite
+backend/database/*.sqlite-journal
+backend/public/storage
+backend/storage/logs
+backend/storage/framework
+backend/storage/app/public
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+frontend/node_modules
+frontend/.next
+frontend/.vercel
+frontend/next-env.d.ts
+frontend/*.tsbuildinfo
