@@ -22,6 +22,7 @@ class UserResource extends JsonResource
             'role' => $this->role?->slug,
             'is_active' => $this->is_active,
             'email_verified_at' => $this->email_verified_at?->toIso8601String(),
+            'locale' => $this->locale ?: 'en',
             'created_at' => $this->created_at?->toIso8601String(),
             'businesses' => $this->whenLoaded('businesses', fn () => $this->businesses->map(fn ($business) => [
                 'id' => $business->id,

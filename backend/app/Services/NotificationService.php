@@ -50,6 +50,7 @@ class NotificationService
             'RESERVATION_CANCELLED' => 'reservation_cancelled',
             'RESERVATION_REMINDER' => 'reservation_reminder',
             'ORDER_STATUS_CHANGED' => 'order_status_changed',
+            'DELIVERY_STATUS', 'DELIVERY_ARRIVED' => 'delivery_status',
             default => null,
         };
     }

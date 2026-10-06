@@ -1,6 +1,7 @@
 "use client";
 
 import { ComboBox, type ComboOption } from "@/components/combo-box";
+import { useI18n } from "@/components/i18n-provider";
 import { VenueGrid } from "@/components/venue-card";
 import { FilterPanelSkeleton, PlacesPageSkeleton, VenueGridSkeleton } from "@/components/skeletons";
 import { Button, EmptyState, Pagination, inputClass } from "@/components/ui";
@@ -19,6 +20,7 @@ export default function PlacesPage() {
 }
 
 function PlacesExplorer() {
+  const { t } = useI18n();
   const params = useSearchParams();
   const router = useRouter();
   const { token } = useAuth();
@@ -165,7 +167,7 @@ function PlacesExplorer() {
       <aside className="hidden border border-line bg-paper p-4 lg:block">{filterBody}</aside>
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="font-serif text-4xl">Mjesta</h1>
+          <h1 className="font-serif text-4xl">{t("places.title")}</h1>
           <div className="w-full max-w-48">
             <ComboBox ariaLabel="Sortiranje" value={params.get("sort") ?? "popular"} onChange={(value) => update({ sort: value })} options={[
               { value: "popular", label: "Popularno" },

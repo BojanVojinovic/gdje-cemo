@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\DeliveryOrder;
 use App\Models\DiningSession;
 use App\Models\Order;
 use App\Models\Reservation;
@@ -43,6 +44,7 @@ class AppServiceProvider extends ServiceProvider
             'reservation' => Reservation::class,
             'dining_session' => DiningSession::class,
             'order' => Order::class,
+            'delivery_order' => DeliveryOrder::class,
         ]);
 
         Route::bind('zone', fn (string $value) => VenueZone::query()->findOrFail($value));

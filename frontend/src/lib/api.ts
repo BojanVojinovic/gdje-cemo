@@ -1,3 +1,4 @@
+import { readLocaleCookie, translate } from "@/lib/i18n";
 import type { ApiSuccess } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
@@ -22,7 +23,8 @@ type Options = {
 };
 
 export async function api<T>(path: string, options: Options = {}): Promise<ApiSuccess<T>> {
-  const headers: Record<string, string> = { Accept: "application/json" };
+  const locale = readLocaleCookie();
+  const headers: Record<string, string> = { Accept: "application/json", "Accept-Language": locale };
 
   if (options.token) {
     headers.Authorization = `Bearer ${options.token}`;
@@ -45,7 +47,7 @@ export async function api<T>(path: string, options: Options = {}): Promise<ApiSu
       cache: options.cache ?? "no-store",
     });
   } catch {
-    throw new ApiError("Veza sa serverom nije uspjela. Provjerite da li API radi.", 0);
+    throw new ApiError(translate(locale, "api.offline"), 0);
   }
 
   const payload = (await response.json().catch(() => null)) as {
@@ -58,7 +60,7 @@ export async function api<T>(path: string, options: Options = {}): Promise<ApiSu
 
   if (!response.ok || !payload || payload.success !== true) {
     throw new ApiError(
-      payload?.message || "Zahtjev nije uspio.",
+      payload?.message || translate(locale, "api.failed"),
       response.status,
       payload?.errors,
     );

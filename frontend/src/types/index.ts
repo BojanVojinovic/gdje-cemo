@@ -86,6 +86,8 @@ export type Venue = {
   status: string;
   verification_status: string;
   is_featured: boolean;
+  offers_delivery?: boolean;
+  delivery_eta_minutes?: number | null;
   timezone: string;
   is_open: boolean;
   is_saved: boolean;
@@ -136,6 +138,7 @@ export type User = {
   role: Role;
   is_active: boolean;
   email_verified_at: string | null;
+  locale?: "en" | "cnr";
   created_at: string;
   businesses?: BusinessMembership[];
   staff?: StaffAssignment[];

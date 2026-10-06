@@ -1,6 +1,7 @@
 "use client";
 
 import { ComboBox } from "@/components/combo-box";
+import { useI18n } from "@/components/i18n-provider";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -27,11 +28,14 @@ const empty = {
   tiktok: "",
   price_level: "2",
   status: "draft",
+  offers_delivery: false,
+  delivery_eta_minutes: "45",
   amenity_ids: [] as number[],
 };
 
 export function VenueForm({ venue }: { venue?: Venue }) {
   const { token, user } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const toast = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -76,6 +80,8 @@ export function VenueForm({ venue }: { venue?: Venue }) {
       tiktok: venue.socials.tiktok ?? "",
       price_level: String(venue.price_level),
       status: venue.status,
+      offers_delivery: Boolean(venue.offers_delivery),
+      delivery_eta_minutes: String(venue.delivery_eta_minutes ?? 45),
       amenity_ids: venue.amenities?.map((amenity) => amenity.id) ?? [],
     });
   }, [venue]);
@@ -101,6 +107,8 @@ export function VenueForm({ venue }: { venue?: Venue }) {
       latitude: Number(form.latitude),
       longitude: Number(form.longitude),
       price_level: Number(form.price_level),
+      offers_delivery: form.offers_delivery,
+      delivery_eta_minutes: form.offers_delivery ? Number(form.delivery_eta_minutes) : null,
       phone: form.phone || null,
       email: form.email || null,
       website: form.website || null,
@@ -164,6 +172,15 @@ export function VenueForm({ venue }: { venue?: Venue }) {
           { value: "published", label: "Objavljeno" },
         ]} />
       </Field>
+      <label className="flex min-h-11 items-center gap-2 text-sm md:col-span-2">
+        <input type="checkbox" checked={form.offers_delivery} onChange={(event) => setForm({ ...form, offers_delivery: event.target.checked })} />
+        {t("form.delivery")}
+      </label>
+      {form.offers_delivery ? (
+        <Field label={t("form.eta")}>
+          <input className={inputClass} inputMode="numeric" min={5} max={180} required value={form.delivery_eta_minutes} onChange={(event) => setForm({ ...form, delivery_eta_minutes: event.target.value })} />
+        </Field>
+      ) : null}
       <fieldset className="md:col-span-2">
         <legend className="mb-2 text-sm font-medium">Sadržaji</legend>
         <div className="grid gap-2 sm:grid-cols-2">

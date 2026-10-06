@@ -8,8 +8,10 @@ import { VenueHospitality } from "@/components/venue-hospitality";
 import { Gallery } from "@/components/gallery";
 import { api } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
+import { normalizeLocale, translate } from "@/lib/i18n";
 import type { VenueDetail } from "@/types";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { ReserveLink } from "@/components/reserve-link";
 import Link from "next/link";
 import { cache } from "react";
@@ -48,6 +50,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function VenuePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const locale = normalizeLocale((await cookies()).get("gdje-locale")?.value);
+  const t = (key: string) => translate(locale, key);
   const detail = await loadVenue(slug);
   if (!detail) notFound();
   const venue = detail.venue;
@@ -96,31 +100,33 @@ export default async function VenuePage({ params }: { params: Promise<{ slug: st
           <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
             <Stars value={venue.rating_avg} />
             <span className="font-semibold">{venue.rating_avg.toFixed(1)}</span>
-            <span className="text-muted">{venue.reviews_count} recenzija</span>
+            <span className="text-muted">{venue.reviews_count} {t("venue.reviews")}</span>
             <span>{venue.price_label}</span>
-            <Badge tone={venue.is_open ? "open" : "closed"}>{venue.is_open ? "Otvoreno" : "Zatvoreno"}</Badge>
-            {venue.verification_status === "verified" ? <Badge tone="verified">Provjereno</Badge> : null}
+            <Badge tone={venue.is_open ? "open" : "closed"}>{venue.is_open ? t("venue.open") : t("venue.closed")}</Badge>
+            {venue.verification_status === "verified" ? <Badge tone="verified">{t("venue.verified")}</Badge> : null}
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
-            <ReserveLink slug={venue.slug} className="inline-flex min-h-11 items-center rounded-full bg-sea px-5 text-sm font-semibold text-snow">Rezerviši sto</ReserveLink>
-            <a href="#meni" className="inline-flex min-h-11 items-center rounded-full border border-line px-5 text-sm font-semibold">Meni</a>
+            <ReserveLink slug={venue.slug} className="inline-flex min-h-11 items-center rounded-full bg-sea px-5 text-sm font-semibold text-snow">{t("venue.reserve")}</ReserveLink>
+            {venue.offers_delivery ? <Link href={`/venue/${venue.slug}/deliver`} className="inline-flex min-h-11 items-center rounded-full border border-line px-5 text-sm font-semibold">{t("venue.orderDelivery")}</Link> : null}
+            <a href="#meni" className="inline-flex min-h-11 items-center rounded-full border border-line px-5 text-sm font-semibold">{t("venue.menu")}</a>
           </div>
         </div>
       </div>
       <div className="fixed inset-x-0 bottom-14 z-20 flex gap-2 border-t border-line bg-paper p-3 md:hidden">
-        <ReserveLink slug={venue.slug} className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full bg-sea text-sm font-semibold text-snow">Rezerviši</ReserveLink>
-        <a href="#meni" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-line text-sm font-semibold">Meni</a>
+        <ReserveLink slug={venue.slug} className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full bg-sea text-sm font-semibold text-snow">{t("venue.reserveShort")}</ReserveLink>
+        {venue.offers_delivery ? <Link href={`/venue/${venue.slug}/deliver`} className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-line text-sm font-semibold">{t("venue.orderDelivery")}</Link> : null}
+        <a href="#meni" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-line text-sm font-semibold">{t("venue.menu")}</a>
       </div>
 
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 lg:flex-row lg:items-start">
         <div className="min-w-0 flex-1 space-y-10">
           <section>
-            <h2 className="font-serif text-3xl">O mjestu</h2>
+            <h2 className="font-serif text-3xl">{t("venue.about")}</h2>
             <p className="mt-3 whitespace-pre-line text-base leading-7">{venue.description}</p>
           </section>
           {venue.images?.length ? <Gallery images={venue.images} /> : null}
           <section id="meni">
-            <h2 className="font-serif text-3xl">Meni</h2>
+            <h2 className="font-serif text-3xl">{t("venue.menu")}</h2>
             {venue.menu?.categories?.length ? (
               <div className="mt-4">
                 <nav aria-label="Kategorije menija" className="sticky top-[4.25rem] z-10 -mx-4 flex gap-2 overflow-x-auto bg-cream/95 px-4 py-3">
@@ -154,7 +160,7 @@ export default async function VenuePage({ params }: { params: Promise<{ slug: st
                 </div>
               </div>
             ) : (
-              <p className="mt-3 text-sm text-muted">Meni još nije objavljen.</p>
+              <p className="mt-3 text-sm text-muted">{t("venue.menuEmpty")}</p>
             )}
           </section>
           <VenueHospitality venueId={venue.id} slug={venue.slug} />

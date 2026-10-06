@@ -1,6 +1,7 @@
 "use client";
 
 import { ComboBox } from "@/components/combo-box";
+import { useI18n } from "@/components/i18n-provider";
 import { EventFiltersSkeleton, EventGridSkeleton } from "@/components/skeletons";
 import { Field, inputClass } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -10,6 +11,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function EventsPage() {
+  const { t } = useI18n();
   const [items, setItems] = useState<VenueContentItem[]>([]);
   const [filters, setFilters] = useState({ city: "", category: "", date: "", price: "", sort: "date", venue: "" });
   const [cities, setCities] = useState<string[]>([]);
@@ -70,7 +72,7 @@ export default function EventsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
-      <h1 className="font-serif text-4xl">Događaji</h1>
+      <h1 className="font-serif text-4xl">{t("events.title")}</h1>
       {filtersReady ? <form className="grid gap-3 sm:grid-cols-3" onSubmit={(event) => event.preventDefault()}>
         <Field label="Grad"><ComboBox value={filters.city} onChange={(value) => setFilters({ ...filters, city: value })} options={[{ value: "", label: "Svi" }, ...cities.map((city) => ({ value: city, label: city }))]} /></Field>
         <Field label="Kategorija"><ComboBox value={filters.category} onChange={(value) => setFilters({ ...filters, category: value })} options={[{ value: "", label: "Sve" }, ...categories.map((category) => ({ value: category, label: category }))]} /></Field>

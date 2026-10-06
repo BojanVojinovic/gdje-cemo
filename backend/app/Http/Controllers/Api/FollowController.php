@@ -10,6 +10,7 @@ use App\Models\VenueFollower;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FollowController extends Controller
 {
@@ -52,6 +53,7 @@ class FollowController extends Controller
             'reservation_cancelled' => ['sometimes', 'boolean'],
             'reservation_reminder' => ['sometimes', 'boolean'],
             'order_status_changed' => ['sometimes', 'boolean'],
+            'delivery_status' => ['sometimes', 'boolean'],
         ]));
 
         return ApiResponse::success($preferences->refresh(), 'Podešavanja obavještenja su sačuvana.');
@@ -71,6 +73,50 @@ class FollowController extends Controller
                 'per_page' => $rows->perPage(),
                 'total' => $rows->total(),
             ],
+        ]);
+    }
+
+    public function stream(Request $request): StreamedResponse
+    {
+        $userId = $request->user()->id;
+        $after = (int) $request->query('after', 0);
+
+        return response()->stream(function () use ($userId, $after) {
+            while (ob_get_level() > 0) {
+                ob_end_flush();
+            }
+            $started = time();
+            while (time() - $started < 20) {
+                $rows = UserNotification::query()
+                    ->where('user_id', $userId)
+                    ->where('id', '>', $after)
+                    ->orderBy('id')
+                    ->limit(20)
+                    ->get();
+                foreach ($rows as $row) {
+                    $after = $row->id;
+                    echo 'data: '.json_encode([
+                        'id' => $row->id,
+                        'type' => $row->type,
+                        'title' => $row->title,
+                        'body' => $row->body,
+                        'data' => $row->data,
+                        'created_at' => $row->created_at?->toIso8601String(),
+                    ])."\n\n";
+                    if (ob_get_level() > 0) {
+                        ob_flush();
+                    }
+                    flush();
+                }
+                echo ": ping\n\n";
+                flush();
+                sleep(2);
+            }
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache, no-transform',
+            'X-Accel-Buffering' => 'no',
+            'Connection' => 'keep-alive',
         ]);
     }
 

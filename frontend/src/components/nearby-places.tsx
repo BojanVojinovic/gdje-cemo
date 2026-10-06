@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { VenueGrid } from "@/components/venue-card";
 import { VenueGridSkeleton } from "@/components/skeletons";
 import { api } from "@/lib/api";
@@ -9,6 +10,7 @@ import { useEffect, useState } from "react";
 
 export function NearbyPlaces({ initial }: { initial: Venue[] }) {
   const { token } = useAuth();
+  const { t } = useI18n();
   const [venues, setVenues] = useState(initial);
   const [status, setStatus] = useState(initial.length ? "ready" : "idle");
 
@@ -35,7 +37,7 @@ export function NearbyPlaces({ initial }: { initial: Venue[] }) {
 
   return (
     <section className="space-y-4">
-      <h2 className="font-serif text-3xl">U blizini</h2>
+      <h2 className="font-serif text-3xl">{t("home.nearby")}</h2>
       {status === "asking" || status === "idle" ? <VenueGridSkeleton count={3} /> : null}
       {status === "denied" ? <p className="text-sm text-muted">Lokacija nije uključena. Pretraga po gradu i dalje radi.</p> : null}
       {status === "empty" ? <p className="text-sm text-muted">U krugu od 30 km nema objavljenih mjesta.</p> : null}

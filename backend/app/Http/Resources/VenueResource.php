@@ -43,6 +43,8 @@ class VenueResource extends JsonResource
             'status' => $this->status?->value ?? $this->status,
             'verification_status' => $this->verification_status?->value ?? $this->verification_status,
             'is_featured' => (bool) $this->is_featured,
+            'offers_delivery' => (bool) $this->offers_delivery,
+            'delivery_eta_minutes' => $this->delivery_eta_minutes,
             'featured_until' => $this->featured_until?->toIso8601String(),
             'timezone' => $this->timezone,
             'is_open' => $hours->isOpen($this->resource),

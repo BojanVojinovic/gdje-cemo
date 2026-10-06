@@ -8,6 +8,7 @@ use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\EmailVerificationCodeService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,23 +19,41 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function register(RegisterRequest $request): JsonResponse
+    public function register(RegisterRequest $request, EmailVerificationCodeService $codes): JsonResponse
     {
         $role = Role::query()->where('slug', 'customer')->firstOrFail();
+        $locale = str_starts_with((string) $request->header('Accept-Language'), 'cnr') ? 'cnr' : 'en';
 
         $user = User::query()->create([
             ...$request->safe()->except('password'),
             'role_id' => $role->id,
+            'locale' => $locale,
             'password' => $request->string('password')->value(),
         ]);
 
-        $user->sendEmailVerificationNotification();
+        $codes->issue($user);
 
         return ApiResponse::success(
             ['user' => new UserResource($user->load('role'))],
-            'Nalog je kreiran. Poslali smo link za potvrdu email adrese.',
+            trans('messages.account_created', [], $locale),
             201,
         );
+    }
+
+    public function verifyCode(Request $request, EmailVerificationCodeService $codes): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+            'code' => ['required', 'digits:6'],
+        ]);
+        $user = $codes->confirm($data['email'], $data['code']);
+        $locale = $user->locale === 'cnr' ? 'cnr' : 'en';
+        $token = $user->createToken('api')->plainTextToken;
+
+        return ApiResponse::success([
+            'token' => $token,
+            'user' => new UserResource($user->load('role', 'businesses', 'staffAssignments.venue')),
+        ], trans('messages.code_confirmed', [], $locale));
     }
 
     public function login(LoginRequest $request): JsonResponse
@@ -43,7 +62,7 @@ class AuthController extends Controller
 
         if (! $user || ! Hash::check($request->string('password')->value(), $user->password)) {
             throw ValidationException::withMessages([
-                'email' => 'Email ili lozinka nisu ispravni.',
+                'email' => trans('messages.bad_login', [], $this->locale($request)),
             ]);
         }
 
@@ -52,8 +71,10 @@ class AuthController extends Controller
         }
 
         if (! $user->hasVerifiedEmail()) {
-            return ApiResponse::error('Potvrdite email adresu prije prijave.', 403, [
-                'email' => ['Email nije potvrđen.'],
+            $locale = $user->locale === 'cnr' ? 'cnr' : 'en';
+
+            return ApiResponse::error(trans('messages.login_unverified', [], $locale), 403, [
+                'email' => [trans('messages.email_unverified', [], $locale)],
             ]);
         }
 
@@ -134,15 +155,21 @@ class AuthController extends Controller
         return ApiResponse::success(['verified' => true], 'Email je potvrđen.');
     }
 
-    public function resendVerification(Request $request): JsonResponse
+    public function resendVerification(Request $request, EmailVerificationCodeService $codes): JsonResponse
     {
         $data = $request->validate(['email' => ['required', 'email']]);
         $user = User::query()->where('email', $data['email'])->first();
+        $locale = $this->locale($request);
 
         if ($user && ! $user->hasVerifiedEmail()) {
-            $user->sendEmailVerificationNotification();
+            $codes->issue($user);
         }
 
-        return ApiResponse::success(null, 'Ako nalog postoji i nije potvrđen, poslali smo novi link.');
+        return ApiResponse::success(null, trans('messages.code_resent', [], $locale));
+    }
+
+    private function locale(Request $request): string
+    {
+        return str_starts_with((string) $request->header('Accept-Language'), 'cnr') ? 'cnr' : 'en';
     }
 }

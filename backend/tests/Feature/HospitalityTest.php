@@ -15,6 +15,7 @@ use App\Models\Venue;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class HospitalityTest extends TestCase
@@ -347,6 +348,63 @@ class HospitalityTest extends TestCase
             ->putJson('/api/staff/orders/'.$kitchen['orders'][0]['id'], ['status' => 'preparing'])
             ->assertOk()
             ->assertJsonPath('data.status', 'preparing');
+    }
+
+    public function test_registered_user_tracks_delivery_and_kitchen_can_mark_it_arrived(): void
+    {
+        Mail::fake();
+        $owner = $this->user('business');
+        $guest = $this->user('customer');
+        $cook = $this->user('customer');
+        $venue = $this->makeVenue($owner);
+        $venue->update(['offers_delivery' => true, 'delivery_eta_minutes' => 40]);
+        $token = $owner->createToken('api')->plainTextToken;
+
+        $category = $this->withToken($token)->postJson('/api/business/venues/'.$venue->id.'/menu/categories', [
+            'name' => 'Kuhinja',
+        ])->assertCreated()->json('data.id');
+        $item = $this->withToken($token)->postJson('/api/business/menu/categories/'.$category.'/items', [
+            'name' => 'Lignje',
+            'price' => 14,
+        ])->assertCreated()->json('data.id');
+        $this->withToken($token)->postJson('/api/business/venues/'.$venue->id.'/staff', [
+            'email' => $cook->email,
+            'roles' => ['kitchen'],
+        ])->assertCreated();
+
+        $this->flushHeaders();
+        $this->postJson('/api/venues/'.$venue->id.'/deliveries', [
+            'address' => 'Njegoševa 1',
+            'city' => 'Kotor',
+            'phone' => '+38267111222',
+            'items' => [['menu_item_id' => $item, 'quantity' => 1]],
+        ])->assertUnauthorized();
+
+        $created = $this->withToken($guest->createToken('api')->plainTextToken)->postJson('/api/venues/'.$venue->id.'/deliveries', [
+            'address' => 'Njegoševa 1',
+            'city' => 'Kotor',
+            'phone' => '+38267111222',
+            'items' => [['menu_item_id' => $item, 'quantity' => 1]],
+        ])->assertCreated()->json('data');
+
+        $this->assertSame('received', $created['status']);
+        $this->assertSame(40, $created['eta_minutes']);
+
+        $board = $this->withToken($cook->createToken('api')->plainTextToken)
+            ->getJson('/api/staff/board')
+            ->assertOk()
+            ->json('data.venues.0');
+        $this->assertCount(1, $board['deliveries']);
+
+        $this->withToken($cook->createToken('api')->plainTextToken)
+            ->putJson('/api/staff/deliveries/'.$created['id'], ['status' => 'arrived'])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'arrived');
+
+        $this->assertDatabaseHas('user_notifications', [
+            'user_id' => $guest->id,
+            'type' => 'DELIVERY_ARRIVED',
+        ]);
     }
 
     private function user(string $role): User

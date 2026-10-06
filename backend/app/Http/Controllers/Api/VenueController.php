@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ReviewResource;
 use App\Http\Resources\VenueResource;
 use App\Models\Venue;
+use App\Models\VenueMetricDay;
 use App\Services\ReviewService;
 use App\Services\VenueQueryService;
 use App\Support\ApiResponse;
@@ -92,6 +93,11 @@ class VenueController extends Controller
 
         if (Cache::add($key, true, now()->addHours(6))) {
             $venue->increment($column);
+            $day = VenueMetricDay::query()->firstOrCreate([
+                'venue_id' => $venue->id,
+                'date' => now()->timezone('Europe/Podgorica')->toDateString(),
+            ], ['profile_views' => 0, 'menu_views' => 0]);
+            $day->increment($column);
         }
     }
 

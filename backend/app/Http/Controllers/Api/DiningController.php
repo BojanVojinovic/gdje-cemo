@@ -107,7 +107,7 @@ class DiningController extends Controller
         ], 'Sesija je otvorena.');
     }
 
-    public function order(Request $request, DiningSession $session, TableOrderGuard $guard): JsonResponse
+    public function order(Request $request, DiningSession $session, TableOrderGuard $guard, NotificationService $notifications): JsonResponse
     {
         if ($session->status !== 'active') {
             throw ValidationException::withMessages(['session' => 'Sesija je zatvorena.']);
@@ -179,6 +179,7 @@ class DiningController extends Controller
             (int) $session->venue_table_id,
             (string) $request->ip(),
         );
+        $this->notifyOrderStaff($order, $notifications);
 
         return ApiResponse::success($order, 'Narudžbina je poslata.', 201);
     }
@@ -323,6 +324,32 @@ class DiningController extends Controller
             ->where('dining_session_id', $session->id)
             ->where('token_hash', hash('sha256', $plain))
             ->first();
+    }
+
+    private function notifyOrderStaff(Order $order, NotificationService $notifications): void
+    {
+        $order->loadMissing('items', 'venue.business');
+        $stations = $order->items->pluck('station')->unique()->all();
+        $assignments = VenueStaff::query()->where('venue_id', $order->venue_id)->get();
+        $ids = [];
+        foreach ($assignments as $row) {
+            if ($row->hasRole('waiter') || array_intersect($row->roles ?? [], $stations)) {
+                $ids[] = $row->user_id;
+            }
+        }
+        if ($ids === [] && $order->venue?->business?->owner_id) {
+            $ids[] = $order->venue->business->owner_id;
+        }
+        User::query()->whereIn('id', array_unique($ids))->get()->each(function (User $user) use ($notifications, $order) {
+            $locale = $user->locale === 'cnr' ? 'cnr' : 'en';
+            $notifications->notify($user, 'TABLE_ORDER', trans('messages.table_order_title', [], $locale), trans('messages.table_order_body', [
+                'table' => $order->table_name_snapshot,
+            ], $locale), [
+                'order_id' => $order->id,
+                'venue_id' => $order->venue_id,
+                'table' => $order->table_name_snapshot,
+            ]);
+        });
     }
 
     private function notifyWaiters(DiningSession $session, string $type, NotificationService $notifications): void

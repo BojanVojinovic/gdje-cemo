@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { VenueGridSkeleton } from "@/components/skeletons";
 import { EmptyState } from "@/components/ui";
 import { VenueGrid } from "@/components/venue-card";
@@ -12,6 +13,7 @@ import { useEffect, useState } from "react";
 
 export default function SavedPage() {
   const { token, user, ready } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [meta, setMeta] = useState<PageMeta | null>(null);
@@ -34,7 +36,7 @@ export default function SavedPage() {
   if (!ready || loading) {
     return (
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-10">
-        <h1 className="font-serif text-4xl">Sačuvana mjesta</h1>
+        <h1 className="font-serif text-4xl">{t("saved.title")}</h1>
         <VenueGridSkeleton />
       </div>
     );
@@ -42,7 +44,7 @@ export default function SavedPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-10">
-      <h1 className="font-serif text-4xl">Sačuvana mjesta</h1>
+      <h1 className="font-serif text-4xl">{t("saved.title")}</h1>
       {venues.length === 0 ? (
         <EmptyState title="Još ništa nije sačuvano." body="Otvorite mjesto i pritisnite Sačuvaj." action={<Link href="/places" className="inline-flex min-h-11 items-center rounded-md bg-sea px-4 text-sm font-semibold text-snow">Pregledaj mjesta</Link>} />
       ) : (

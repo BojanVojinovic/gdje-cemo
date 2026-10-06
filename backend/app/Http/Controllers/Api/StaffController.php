@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\DeliveryOrder;
 use App\Models\Order;
 use App\Models\TableServiceRequest;
 use App\Models\VenueStaff;
@@ -29,6 +30,14 @@ class StaffController extends Controller
             ->limit(60)
             ->get()
             ->groupBy('venue_id');
+        $deliveries = DeliveryOrder::query()
+            ->with('items', 'user:id,first_name,last_name')
+            ->whereIn('venue_id', $venueIds)
+            ->whereNotIn('status', ['delivered', 'cancelled'])
+            ->latest()
+            ->limit(40)
+            ->get()
+            ->groupBy('venue_id');
         $requests = TableServiceRequest::query()
             ->with('session:id,table_name_snapshot')
             ->whereIn('venue_id', $venueIds)
@@ -38,7 +47,7 @@ class StaffController extends Controller
             ->get()
             ->groupBy('venue_id');
 
-        $venues = $assignments->map(function (VenueStaff $assignment) use ($orders, $requests) {
+        $venues = $assignments->map(function (VenueStaff $assignment) use ($orders, $requests, $deliveries) {
             $roles = $assignment->roles ?? [];
             $seesAll = in_array('waiter', $roles, true);
             $stations = array_values(array_intersect($roles, ['kitchen', 'bar']));
@@ -74,6 +83,34 @@ class StaffController extends Controller
                 'slug' => $assignment->venue?->slug,
                 'roles' => $roles,
                 'orders' => $venueOrders,
+                'deliveries' => ($deliveries->get($assignment->venue_id) ?? collect())->map(function (DeliveryOrder $delivery) use ($seesAll, $stations) {
+                    $items = $delivery->items->filter(function ($item) use ($seesAll, $stations) {
+                        if ($seesAll) {
+                            return true;
+                        }
+
+                        return in_array($item->station, $stations, true);
+                    })->values();
+                    if ($items->isEmpty()) {
+                        return null;
+                    }
+
+                    return [
+                        'id' => $delivery->id,
+                        'status' => $delivery->status,
+                        'address' => $delivery->address,
+                        'city' => $delivery->city,
+                        'phone' => $delivery->phone,
+                        'notes' => $delivery->notes,
+                        'eta_minutes' => $delivery->eta_minutes,
+                        'customer' => trim(($delivery->user->first_name ?? '').' '.($delivery->user->last_name ?? '')),
+                        'items' => $items->map(fn ($item) => [
+                            'name' => $item->name_snapshot,
+                            'quantity' => $item->quantity,
+                            'station' => $item->station,
+                        ])->values(),
+                    ];
+                })->filter()->values(),
                 'requests' => $seesAll
                     ? ($requests->get($assignment->venue_id) ?? collect())->map(fn (TableServiceRequest $row) => [
                         'id' => $row->id,

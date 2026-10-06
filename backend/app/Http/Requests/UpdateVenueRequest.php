@@ -40,6 +40,8 @@ class UpdateVenueRequest extends FormRequest
             'status' => ['sometimes', Rule::enum(VenueStatus::class)],
             'verification_status' => ['sometimes', Rule::enum(VerificationStatus::class)],
             'is_featured' => ['sometimes', 'boolean'],
+            'offers_delivery' => ['sometimes', 'boolean'],
+            'delivery_eta_minutes' => ['required_if:offers_delivery,true,1', 'nullable', 'integer', 'min:5', 'max:180'],
             'featured_until' => ['nullable', 'date'],
         ];
     }

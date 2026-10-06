@@ -10,7 +10,7 @@ class NotificationPreference extends Model
     protected $fillable = [
         'user_id', 'new_event', 'event_updated', 'event_cancelled', 'new_post', 'new_promotion',
         'venue_announcement', 'reservation_confirmed', 'reservation_cancelled', 'reservation_reminder',
-        'order_status_changed',
+        'order_status_changed', 'delivery_status',
     ];
 
     protected function casts(): array
@@ -26,6 +26,7 @@ class NotificationPreference extends Model
             'reservation_cancelled' => 'boolean',
             'reservation_reminder' => 'boolean',
             'order_status_changed' => 'boolean',
+            'delivery_status' => 'boolean',
         ];
     }
 

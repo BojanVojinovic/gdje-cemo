@@ -1,5 +1,7 @@
 "use client";
 
+import { AnalyticsBoard, type AnalyticsPayload } from "@/components/analytics-board";
+import { useI18n } from "@/components/i18n-provider";
 import { StatGridSkeleton, TableListSkeleton } from "@/components/skeletons";
 import { Button, EmptyState, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
@@ -20,8 +22,12 @@ type Dashboard = {
 
 export default function BusinessHomePage() {
   const { token, user, ready } = useAuth();
+  const { t } = useI18n();
   const toast = useToast();
   const [data, setData] = useState<Dashboard | null>(null);
+  const [analytics, setAnalytics] = useState<AnalyticsPayload | null>(null);
+  const [days, setDays] = useState(30);
+  const [venueId, setVenueId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [application, setApplication] = useState<{ name: string; status: string; rejection_reason?: string | null } | null>(null);
   const [name, setName] = useState("");
@@ -38,6 +44,12 @@ export default function BusinessHomePage() {
       .then((response) => setData(response.data))
       .catch((reason) => setError(reason instanceof ApiError ? reason.message : "Pregled nije učitan."));
   }, [token, user]);
+
+  useEffect(() => {
+    if (!token || !user || user.role === "customer") return;
+    const query = venueId ? `?days=${days}&venue_id=${venueId}` : `?days=${days}`;
+    api<AnalyticsPayload>(`/business/analytics${query}`, { token }).then((response) => setAnalytics(response.data)).catch(() => undefined);
+  }, [token, user, days, venueId]);
 
   async function apply(event: React.FormEvent) {
     event.preventDefault();
@@ -83,28 +95,19 @@ export default function BusinessHomePage() {
     );
   }
 
-  const stats = [
-    ["Pregledi profila", data.profile_views],
-    ["Pregledi menija", data.menu_views],
-    ["Recenzije", data.reviews_count],
-    ["Sačuvano", data.favorites_count],
-    ["Prosjek", data.rating_avg.toFixed(2)],
-  ];
-
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Danas</p>
-        <h1 className="font-serif text-4xl">Pregled lokala</h1>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-3">
-        {stats.map(([label, value]) => (
-          <div key={String(label)} className="border border-line bg-paper p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">{label}</p>
-            <p className="mt-2 font-serif text-4xl">{value}</p>
-          </div>
-        ))}
-      </div>
+      {analytics ? (
+        <AnalyticsBoard
+          data={analytics}
+          days={days}
+          onDays={setDays}
+          venueId={venueId}
+          venues={data.venues.map((venue) => ({ id: venue.id, name: venue.name }))}
+          onVenue={setVenueId}
+        />
+      ) : <StatGridSkeleton count={8} className="grid gap-3 sm:grid-cols-4" />}
+      <h2 className="font-serif text-2xl">{t("dash.venues")}</h2>
       <div className="space-y-2">
         {data.venues.map((venue) => (
           <Link key={venue.id} href={`/business/venues/${venue.id}`} className="flex items-center justify-between border border-line bg-paper px-4 py-3">

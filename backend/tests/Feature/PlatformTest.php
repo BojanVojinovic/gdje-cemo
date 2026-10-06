@@ -15,7 +15,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
+use App\Mail\VerificationCodeMail;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
@@ -32,7 +33,7 @@ class PlatformTest extends TestCase
 
     public function test_registration_hashes_password_and_requires_verification_before_login(): void
     {
-        Notification::fake();
+        Mail::fake();
 
         $response = $this->postJson('/api/auth/register', [
             'first_name' => 'Maja',
@@ -54,12 +55,17 @@ class PlatformTest extends TestCase
             'password' => 'Lozinka123',
         ])->assertForbidden()->assertJsonPath('success', false);
 
-        $url = URL::temporarySignedRoute('verification.verify', now()->addHour(), [
-            'id' => $user->id,
-            'hash' => sha1($user->email),
-        ]);
+        $code = null;
+        Mail::assertSent(VerificationCodeMail::class, function (VerificationCodeMail $mail) use (&$code) {
+            $code = $mail->code;
 
-        $this->getJson($url)->assertOk()->assertJsonPath('data.verified', true);
+            return true;
+        });
+
+        $this->postJson('/api/auth/email/verify-code', [
+            'email' => 'maja@example.com',
+            'code' => $code,
+        ])->assertOk()->assertJsonPath('data.user.email_verified_at', fn ($value) => $value !== null);
         $this->assertNotNull($user->fresh()->email_verified_at);
 
         $login = $this->postJson('/api/auth/login', [

@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\AdminController;
+use App\Http\Controllers\Api\AnalyticsController;
+use App\Http\Controllers\Api\ShiftController;
 use App\Http\Controllers\Api\Admin\PlatformController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Business\ApplicationController;
@@ -10,6 +12,7 @@ use App\Http\Controllers\Api\Business\StaffController as BusinessStaffController
 use App\Http\Controllers\Api\Business\VenueController as BusinessVenueController;
 use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\ContentController;
+use App\Http\Controllers\Api\DeliveryController;
 use App\Http\Controllers\Api\DiningController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\FloorPlanController;
@@ -31,6 +34,7 @@ Route::prefix('auth')->group(function () {
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth');
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:auth');
     Route::post('email/resend', [AuthController::class, 'resendVerification'])->middleware('throttle:auth');
+    Route::post('email/verify-code', [AuthController::class, 'verifyCode'])->middleware('throttle:auth');
     Route::get('email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
         ->middleware('signed')
         ->name('verification.verify');
@@ -69,7 +73,16 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('me/notification-preferences', [FollowController::class, 'preferences']);
     Route::put('me/notification-preferences', [FollowController::class, 'updatePreferences']);
     Route::get('me/notifications', [FollowController::class, 'notifications']);
+    Route::get('me/notifications/stream', [FollowController::class, 'stream']);
     Route::post('me/notifications/{notification}/read', [FollowController::class, 'read']);
+    Route::get('me/shifts', [ShiftController::class, 'mine']);
+    Route::post('me/shifts/{staffShift}/swaps', [ShiftController::class, 'requestSwap']);
+    Route::post('me/shift-swaps/{shiftSwap}/accept', [ShiftController::class, 'accept']);
+    Route::post('me/shift-swaps/{shiftSwap}/decline', [ShiftController::class, 'decline']);
+    Route::post('me/shift-swaps/{shiftSwap}/cancel', [ShiftController::class, 'cancelSwap']);
+    Route::get('me/deliveries', [DeliveryController::class, 'mine']);
+    Route::get('me/deliveries/{deliveryOrder}', [DeliveryController::class, 'show']);
+    Route::post('venues/{venue}/deliveries', [DeliveryController::class, 'store'])->whereNumber('venue');
 
     Route::post('venues/{venue}/reservations', [ReservationController::class, 'store'])->whereNumber('venue');
     Route::post('venues/{venue}/waitlist', [ReservationController::class, 'waitlist'])->whereNumber('venue');
@@ -80,6 +93,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::delete('content/{content}/register', [ContentController::class, 'unregister']);
     Route::get('staff/board', [StaffController::class, 'board']);
     Route::put('staff/orders/{order}', [StaffController::class, 'updateOrder']);
+    Route::put('staff/deliveries/{deliveryOrder}', [DeliveryController::class, 'update']);
     Route::post('staff/requests/{tableServiceRequest}/done', [StaffController::class, 'completeRequest']);
 
     Route::post('venues/{venue}/reviews', [ReviewController::class, 'store'])->whereNumber('venue');
@@ -96,6 +110,13 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::middleware('role:business,admin')->prefix('business')->group(function () {
         Route::get('dashboard', [BusinessVenueController::class, 'dashboard']);
+        Route::get('analytics', [AnalyticsController::class, 'business']);
+        Route::get('venues/{venue}/shifts', [ShiftController::class, 'forVenue'])->whereNumber('venue');
+        Route::post('venues/{venue}/shifts', [ShiftController::class, 'store'])->whereNumber('venue');
+        Route::put('shifts/{staffShift}', [ShiftController::class, 'update']);
+        Route::delete('shifts/{staffShift}', [ShiftController::class, 'destroy']);
+        Route::get('venues/{venue}/deliveries', [DeliveryController::class, 'forVenue'])->whereNumber('venue');
+        Route::put('deliveries/{deliveryOrder}', [DeliveryController::class, 'update']);
         Route::get('venues', [BusinessVenueController::class, 'index']);
         Route::post('venues', [BusinessVenueController::class, 'store']);
         Route::get('venues/{venue}', [BusinessVenueController::class, 'show']);
@@ -156,6 +177,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::middleware('role:admin')->prefix('admin')->group(function () {
         Route::get('stats', [AdminController::class, 'stats']);
+        Route::get('analytics', [AnalyticsController::class, 'admin']);
         Route::get('users', [AdminController::class, 'users']);
         Route::put('users/{user}', [AdminController::class, 'updateUser']);
         Route::delete('users/{user}', [AdminController::class, 'destroyUser']);

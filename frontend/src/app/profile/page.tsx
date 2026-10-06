@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { EditReviewModal } from "@/components/review-section";
 import { ProfileFormSkeleton, ProfileReviewListSkeleton } from "@/components/skeletons";
 import { Button, EmptyState, Field, inputClass, useToast } from "@/components/ui";
@@ -13,6 +14,7 @@ import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
   const { user, token, ready, setUser } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const toast = useToast();
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -130,12 +132,14 @@ export default function ProfilePage() {
           <p className="text-sm text-muted">Član od {formatDate(user.created_at)}</p>
         </div>
       </header>
-      <nav className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Dijelovi profila">
+      <nav className="grid grid-cols-2 gap-2 sm:grid-cols-3" aria-label={t("nav.profile")}>
         {[
-          ["/saved", "Sačuvano"],
-          ["/profile/reservations", "Rezervacije"],
-          ["/profile/notifications", "Obavještenja"],
-          ["#recenzije", "Recenzije"],
+          ["/saved", t("profile.saved")],
+          ["/profile/reservations", t("profile.reservations")],
+          ["/profile/deliveries", t("profile.deliveries")],
+          ["/profile/shifts", t("shift.mine")],
+          ["/profile/notifications", t("profile.notifications")],
+          ["#recenzije", t("profile.reviews")],
         ].map(([href, label]) => (
           <Link key={href} href={href} className="border border-line bg-paper px-3 py-4 text-sm font-semibold">{label}</Link>
         ))}

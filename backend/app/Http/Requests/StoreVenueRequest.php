@@ -38,6 +38,8 @@ class StoreVenueRequest extends FormRequest
             'amenity_ids' => ['array'],
             'amenity_ids.*' => ['integer', 'exists:amenities,id'],
             'status' => ['nullable', Rule::enum(VenueStatus::class)],
+            'offers_delivery' => ['sometimes', 'boolean'],
+            'delivery_eta_minutes' => ['required_if:offers_delivery,true,1', 'nullable', 'integer', 'min:5', 'max:180'],
             'verification_status' => ['nullable', Rule::enum(VerificationStatus::class)],
         ];
     }
