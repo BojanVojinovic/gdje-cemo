@@ -76,7 +76,7 @@ class DeliveryService
     public function update(DeliveryOrder $order, string $status, ?int $etaMinutes, User $actor): DeliveryOrder
     {
         $order->loadMissing('venue.business', 'items', 'user');
-        if (! $this->canManage($actor, $order)) {
+        if (! $this->canManage($actor, $order, $status)) {
             abort(403, 'You cannot update this delivery.');
         }
 
@@ -98,7 +98,7 @@ class DeliveryService
         return $order;
     }
 
-    public function canManage(User $actor, DeliveryOrder $order): bool
+    public function canManage(User $actor, DeliveryOrder $order, ?string $status = null): bool
     {
         if ($actor->managesVenue($order->venue)) {
             return true;
@@ -110,13 +110,17 @@ class DeliveryService
         if (! $assignment) {
             return false;
         }
-        if ($assignment->hasRole('waiter')) {
+        if ($assignment->hasRole('delivery')) {
             return true;
         }
         $stations = array_values(array_intersect($assignment->roles ?? [], ['kitchen', 'bar']));
         $order->loadMissing('items');
+        $prepares = $order->items->contains(fn ($item) => in_array($item->station, $stations, true));
+        if (! $prepares) {
+            return false;
+        }
 
-        return $order->items->contains(fn ($item) => in_array($item->station, $stations, true));
+        return $status === null || $status === 'preparing';
     }
 
     public function payload(DeliveryOrder $order): array
@@ -190,7 +194,7 @@ class DeliveryService
         $assignments = VenueStaff::query()->where('venue_id', $order->venue_id)->get();
         $ids = [];
         foreach ($assignments as $row) {
-            if ($row->hasRole('waiter') || array_intersect($row->roles ?? [], $stations)) {
+            if ($row->hasRole('delivery') || array_intersect($row->roles ?? [], $stations)) {
                 $ids[] = $row->user_id;
             }
         }

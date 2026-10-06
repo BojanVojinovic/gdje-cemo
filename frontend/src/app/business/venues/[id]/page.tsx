@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { VenueForm } from "@/components/venue-form";
 import { FieldSkeleton, StatGridSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
@@ -423,14 +424,12 @@ function Reviews({ venueId, reviews, setReviews }: { venueId: number; reviews: R
   );
 }
 
-const staffRoles = [
-  { id: "waiter", label: "Konobar" },
-  { id: "bar", label: "Šank" },
-  { id: "kitchen", label: "Kuhinja" },
-] as const;
+const staffRoleIds = ["waiter", "bar", "kitchen", "delivery"] as const;
 
 function StaffPanel({ venueId }: { venueId: number }) {
   const { token } = useAuth();
+  const { t } = useI18n();
+  const staffRoles = staffRoleIds.map((id) => ({ id, label: t(`staff.role.${id}`) }));
   const toast = useToast();
   const [rows, setRows] = useState<{ id: number; name: string; email: string; roles: string[] }[]>([]);
   const [email, setEmail] = useState("");

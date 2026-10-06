@@ -73,7 +73,7 @@ class StaffController extends Controller
         return $request->validate([
             'email' => ['required', 'email', 'max:255'],
             'roles' => ['required', 'array', 'min:1'],
-            'roles.*' => ['distinct', 'in:waiter,bar,kitchen'],
+            'roles.*' => ['distinct', 'in:waiter,bar,kitchen,delivery'],
         ]);
     }
 
@@ -82,6 +82,7 @@ class StaffController extends Controller
         return match ($role) {
             'waiter' => 'Konobar',
             'bar' => 'Šank',
+            'delivery' => 'Dostava',
             default => 'Kuhinja',
         };
     }

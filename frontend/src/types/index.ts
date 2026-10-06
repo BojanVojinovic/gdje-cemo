@@ -149,7 +149,7 @@ export type StaffAssignment = {
   venue_name: string;
   venue_slug: string;
   business_id: number;
-  roles: Array<"waiter" | "bar" | "kitchen">;
+  roles: Array<"waiter" | "bar" | "kitchen" | "delivery">;
 };
 
 export type Promotion = {

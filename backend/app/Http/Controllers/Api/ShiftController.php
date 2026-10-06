@@ -29,7 +29,7 @@ class ShiftController extends Controller
         $this->authorize('update', $venue);
         $data = $request->validate([
             'user_id' => ['required', 'integer'],
-            'role' => ['nullable', 'in:waiter,bar,kitchen'],
+            'role' => ['nullable', 'in:waiter,bar,kitchen,delivery'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:500'],
@@ -44,7 +44,7 @@ class ShiftController extends Controller
         $this->authorize('update', $staffShift->venue);
         $data = $request->validate([
             'user_id' => ['sometimes', 'integer'],
-            'role' => ['nullable', 'in:waiter,bar,kitchen'],
+            'role' => ['nullable', 'in:waiter,bar,kitchen,delivery'],
             'starts_at' => ['sometimes', 'date'],
             'ends_at' => ['sometimes', 'date'],
             'notes' => ['nullable', 'string', 'max:500'],

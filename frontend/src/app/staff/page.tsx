@@ -152,7 +152,7 @@ export default function StaffPage() {
                 <input className={`${inputClass} mt-1 w-28`} inputMode="numeric" value={eta[delivery.id] ?? String(delivery.eta_minutes ?? "")} onChange={(event) => setEta({ ...eta, [delivery.id]: event.target.value })} />
               </label>
               <div className="mt-3 flex flex-wrap gap-2">
-                {deliveryStatuses.map((status) => (
+                {(venue.roles.includes("delivery") ? deliveryStatuses : ["preparing"]).map((status) => (
                   <Button key={status} variant={delivery.status === status ? "primary" : "secondary"} onClick={() => void setDelivery(delivery.id, status)}>
                     {t(`status.${status}`)}
                   </Button>

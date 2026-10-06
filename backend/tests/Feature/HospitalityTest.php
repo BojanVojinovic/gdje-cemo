@@ -350,12 +350,14 @@ class HospitalityTest extends TestCase
             ->assertJsonPath('data.status', 'preparing');
     }
 
-    public function test_registered_user_tracks_delivery_and_kitchen_can_mark_it_arrived(): void
+    public function test_registered_user_tracks_delivery_and_courier_marks_it_arrived(): void
     {
         Mail::fake();
         $owner = $this->user('business');
         $guest = $this->user('customer');
         $cook = $this->user('customer');
+        $courier = $this->user('customer');
+        $waiter = $this->user('customer');
         $venue = $this->makeVenue($owner);
         $venue->update(['offers_delivery' => true, 'delivery_eta_minutes' => 40]);
         $token = $owner->createToken('api')->plainTextToken;
@@ -370,6 +372,14 @@ class HospitalityTest extends TestCase
         $this->withToken($token)->postJson('/api/business/venues/'.$venue->id.'/staff', [
             'email' => $cook->email,
             'roles' => ['kitchen'],
+        ])->assertCreated();
+        $this->withToken($token)->postJson('/api/business/venues/'.$venue->id.'/staff', [
+            'email' => $courier->email,
+            'roles' => ['delivery'],
+        ])->assertCreated();
+        $this->withToken($token)->postJson('/api/business/venues/'.$venue->id.'/staff', [
+            'email' => $waiter->email,
+            'roles' => ['waiter'],
         ])->assertCreated();
 
         $this->flushHeaders();
@@ -397,6 +407,27 @@ class HospitalityTest extends TestCase
         $this->assertCount(1, $board['deliveries']);
 
         $this->withToken($cook->createToken('api')->plainTextToken)
+            ->putJson('/api/staff/deliveries/'.$created['id'], ['status' => 'preparing'])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'preparing');
+        $this->withToken($cook->createToken('api')->plainTextToken)
+            ->putJson('/api/staff/deliveries/'.$created['id'], ['status' => 'arrived'])
+            ->assertForbidden();
+
+        $waiterBoard = $this->withToken($waiter->createToken('api')->plainTextToken)
+            ->getJson('/api/staff/board')
+            ->assertOk()
+            ->json('data.venues.0');
+        $this->assertSame([], $waiterBoard['deliveries']);
+
+        $courierBoard = $this->withToken($courier->createToken('api')->plainTextToken)
+            ->getJson('/api/staff/board')
+            ->assertOk()
+            ->json('data.venues.0');
+        $this->assertCount(1, $courierBoard['deliveries']);
+        $this->assertSame([], $courierBoard['orders']);
+
+        $this->withToken($courier->createToken('api')->plainTextToken)
             ->putJson('/api/staff/deliveries/'.$created['id'], ['status' => 'arrived'])
             ->assertOk()
             ->assertJsonPath('data.status', 'arrived');

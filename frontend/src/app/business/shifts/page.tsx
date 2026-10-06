@@ -100,6 +100,7 @@ export default function BusinessShiftsPage() {
             <option value="waiter">{t("staff.role.waiter")}</option>
             <option value="bar">{t("staff.role.bar")}</option>
             <option value="kitchen">{t("staff.role.kitchen")}</option>
+            <option value="delivery">{t("staff.role.delivery")}</option>
           </select>
         </Field>
         <Field label={t("shift.start")}><input className={inputClass} type="datetime-local" required value={form.starts_at} onChange={(event) => setForm({ ...form, starts_at: event.target.value })} /></Field>

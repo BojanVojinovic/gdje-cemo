@@ -50,6 +50,7 @@ class StaffController extends Controller
         $venues = $assignments->map(function (VenueStaff $assignment) use ($orders, $requests, $deliveries) {
             $roles = $assignment->roles ?? [];
             $seesAll = in_array('waiter', $roles, true);
+            $runsDeliveries = in_array('delivery', $roles, true);
             $stations = array_values(array_intersect($roles, ['kitchen', 'bar']));
             $venueOrders = ($orders->get($assignment->venue_id) ?? collect())->map(function (Order $order) use ($seesAll, $stations) {
                 $items = $order->items->filter(function ($item) use ($seesAll, $stations) {
@@ -83,9 +84,9 @@ class StaffController extends Controller
                 'slug' => $assignment->venue?->slug,
                 'roles' => $roles,
                 'orders' => $venueOrders,
-                'deliveries' => ($deliveries->get($assignment->venue_id) ?? collect())->map(function (DeliveryOrder $delivery) use ($seesAll, $stations) {
-                    $items = $delivery->items->filter(function ($item) use ($seesAll, $stations) {
-                        if ($seesAll) {
+                'deliveries' => ($deliveries->get($assignment->venue_id) ?? collect())->map(function (DeliveryOrder $delivery) use ($runsDeliveries, $stations) {
+                    $items = $delivery->items->filter(function ($item) use ($runsDeliveries, $stations) {
+                        if ($runsDeliveries) {
                             return true;
                         }
 
