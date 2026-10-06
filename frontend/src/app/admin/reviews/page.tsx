@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoListSkeleton } from "@/components/skeletons";
 import { Button, EmptyState, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -12,11 +13,17 @@ export default function AdminReviewsPage() {
   const toast = useToast();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
 
   async function load() {
     if (!token) return;
-    const response = await api<Review[]>("/admin/reviews", { token });
-    setReviews(response.data);
+    setLoading(true);
+    try {
+      const response = await api<Review[]>("/admin/reviews", { token });
+      setReviews(response.data);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { void load().catch(() => undefined); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -49,8 +56,9 @@ export default function AdminReviewsPage() {
         <Button variant="secondary" onClick={() => bulk("publish")}>Objavi</Button>
         <Button variant="danger" onClick={() => bulk("delete")}>Obriši</Button>
       </div>
-      {reviews.length === 0 ? <EmptyState title="Nema recenzija." body="Kad korisnici ostave utiske, pojaviće se ovdje." /> : null}
-      <ul className="space-y-3">
+      {loading ? <InfoListSkeleton /> : null}
+      {!loading && reviews.length === 0 ? <EmptyState title="Nema recenzija." body="Kad korisnici ostave utiske, pojaviće se ovdje." /> : null}
+      {!loading ? <ul className="space-y-3">
         {reviews.map((review) => (
           <li key={review.id} className="rounded-lg border border-line bg-paper p-4 text-sm">
             <label className="flex items-start gap-3">
@@ -66,7 +74,7 @@ export default function AdminReviewsPage() {
             </div>
           </li>
         ))}
-      </ul>
+      </ul> : null}
     </div>
   );
 }

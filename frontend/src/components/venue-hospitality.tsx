@@ -2,6 +2,7 @@
 
 import { FloorCanvas, TableLegend } from "@/components/floor-canvas";
 import { ReportButton } from "@/components/review-section";
+import { HospitalitySkeleton } from "@/components/skeletons";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { contentTypeLabel, seatsLabel, when, type FloorPlanPayload, type VenueContentItem } from "@/lib/hospitality";
@@ -12,16 +13,22 @@ export function VenueHospitality({ venueId, slug }: { venueId: number; slug: str
   const { user } = useAuth();
   const [plan, setPlan] = useState<FloorPlanPayload | null>(null);
   const [content, setContent] = useState<VenueContentItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api<FloorPlanPayload>(`/venues/${venueId}/floor-plan`).then((response) => setPlan(response.data)).catch(() => undefined);
-    api<VenueContentItem[]>(`/venues/${venueId}/content`).then((response) => setContent(response.data)).catch(() => undefined);
+    setLoading(true);
+    Promise.all([
+      api<FloorPlanPayload>(`/venues/${venueId}/floor-plan`).then((response) => setPlan(response.data)).catch(() => setPlan(null)),
+      api<VenueContentItem[]>(`/venues/${venueId}/content`).then((response) => setContent(response.data)).catch(() => setContent([])),
+    ]).finally(() => setLoading(false));
   }, [venueId]);
 
   const events = content.filter((item) => item.type === "event");
   const posts = content.filter((item) => item.type === "post");
   const announcements = content.filter((item) => item.type === "announcement");
   const promotions = content.filter((item) => item.type === "promotion" || item.type === "special_offer");
+
+  if (loading) return <HospitalitySkeleton />;
 
   return (
     <div className="space-y-10">

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Business\ApplicationController;
 use App\Http\Controllers\Api\Business\MenuController;
 use App\Http\Controllers\Api\Business\OpeningHourController;
+use App\Http\Controllers\Api\Business\StaffController as BusinessStaffController;
 use App\Http\Controllers\Api\Business\VenueController as BusinessVenueController;
 use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\ContentController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReservationController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\StaffController;
 use App\Http\Controllers\Api\VenueController;
 use App\Support\ApiResponse;
 use Illuminate\Support\Facades\Route;
@@ -48,6 +50,9 @@ Route::get('venues/{venue}/content', [ContentController::class, 'venueFeed'])->w
 Route::get('events', [ContentController::class, 'events']);
 Route::get('events/{slug}', [ContentController::class, 'showEvent'])->where('slug', '[A-Za-z0-9\-]+');
 Route::get('tables/qr/{token}', [DiningController::class, 'scan']);
+Route::post('tables/qr/{token}/session', [DiningController::class, 'openSession'])->middleware('throttle:table-session');
+Route::post('sessions/{session}/orders', [DiningController::class, 'order']);
+Route::post('sessions/{session}/service', [DiningController::class, 'service']);
 
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
@@ -73,8 +78,9 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::delete('venues/{venue}/follow', [FollowController::class, 'unfollow'])->whereNumber('venue');
     Route::post('content/{content}/register', [ContentController::class, 'register']);
     Route::delete('content/{content}/register', [ContentController::class, 'unregister']);
-    Route::post('tables/qr/{token}/session', [DiningController::class, 'openSession']);
-    Route::post('sessions/{session}/orders', [DiningController::class, 'order']);
+    Route::get('staff/board', [StaffController::class, 'board']);
+    Route::put('staff/orders/{order}', [StaffController::class, 'updateOrder']);
+    Route::post('staff/requests/{tableServiceRequest}/done', [StaffController::class, 'completeRequest']);
 
     Route::post('venues/{venue}/reviews', [ReviewController::class, 'store'])->whereNumber('venue');
     Route::put('reviews/{review}', [ReviewController::class, 'update']);
@@ -101,6 +107,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::put('venues/{venue}/images/reorder', [BusinessVenueController::class, 'reorderImages']);
         Route::get('venues/{venue}/reviews', [BusinessVenueController::class, 'reviews']);
         Route::put('venues/{venue}/hours', [OpeningHourController::class, 'update']);
+
+        Route::get('venues/{venue}/staff', [BusinessStaffController::class, 'index']);
+        Route::post('venues/{venue}/staff', [BusinessStaffController::class, 'store']);
+        Route::delete('venues/{venue}/staff/{venueStaff}', [BusinessStaffController::class, 'destroy']);
 
         Route::post('venues/{venue}/menu/categories', [MenuController::class, 'storeCategory']);
         Route::put('venues/{venue}/menu/categories/reorder', [MenuController::class, 'reorderCategories']);

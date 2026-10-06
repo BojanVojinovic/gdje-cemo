@@ -190,7 +190,7 @@ class PlatformTest extends TestCase
         $this->withToken($token)->postJson('/api/venues/'.$venue->id.'/reviews', [
             'rating' => 5,
             'body' => 'Nova recenzija nakon brisanja prethodne.',
-        ])->assertCreated();
+        ])->assertCreated()->assertJsonPath('data.response', null);
 
         $this->withToken($token)->postJson('/api/venues/'.$venue->id.'/favorite')->assertOk();
         $this->withToken($token)->getJson('/api/me/favorites')->assertJsonPath('data.0.id', $venue->id);

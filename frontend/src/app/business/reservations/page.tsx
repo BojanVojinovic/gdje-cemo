@@ -2,6 +2,7 @@
 
 import { ComboBox } from "@/components/combo-box";
 import { FloorCanvas } from "@/components/floor-canvas";
+import { InfoListSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -34,14 +35,20 @@ export default function ReservationsPage() {
   const [venueId, setVenueId] = useState<number | null>(null);
   const [plan, setPlan] = useState<FloorPlanPayload | null>(null);
   const [walkIn, setWalkIn] = useState({ table_id: "", party_size: 2, guest_name: "" });
+  const [loading, setLoading] = useState(true);
 
   async function load() {
     if (!token) return;
     const query = new URLSearchParams();
     if (date && view !== "list") query.set("date", date);
     if (venueId) query.set("venue_id", String(venueId));
-    const response = await api<ReservationRow[]>(`/business/reservations?${query.toString()}`, { token });
-    setRows(response.data);
+    setLoading(true);
+    try {
+      const response = await api<ReservationRow[]>(`/business/reservations?${query.toString()}`, { token });
+      setRows(response.data);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -86,8 +93,9 @@ export default function ReservationsPage() {
           <ComboBox value={venueId ? String(venueId) : ""} onChange={(value) => setVenueId(Number(value))} options={venues.map((venue) => ({ value: String(venue.id), label: venue.name }))} />
         </Field>
       </div>
+      {view === "floor" && !plan ? <div className="aspect-[4/3] max-w-3xl animate-pulse border border-line bg-line" aria-busy="true" /> : null}
       {view === "floor" && plan ? <FloorCanvas tables={plan.tables} width={plan.floor_plan.canvas_width} height={plan.floor_plan.canvas_height} backgroundUrl={plan.floor_plan.background_url} /> : null}
-      <ul className="space-y-3">
+      {loading ? <InfoListSkeleton /> : <ul className="space-y-3">
         {rows.map((row) => (
           <li key={row.id} className="rounded-lg border border-line bg-paper p-4">
             <p className="font-medium">{when(row.start_at)} · {row.table_name} · {row.party_size} gostiju</p>
@@ -104,8 +112,8 @@ export default function ReservationsPage() {
             </div>
           </li>
         ))}
-      </ul>
-      {view === "day" ? (
+      </ul>}
+      {!loading && view === "day" ? (
         <section className="space-y-2">
           <h2 className="font-serif text-2xl">Raspored stolova</h2>
           {(plan?.tables ?? []).map((table) => {

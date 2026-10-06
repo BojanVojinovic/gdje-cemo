@@ -1,6 +1,6 @@
 "use client";
 
-import { Skeleton } from "@/components/ui";
+import { StatGridSkeleton } from "@/components/skeletons";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -18,6 +18,6 @@ export function RoleGate({ allow, children }: { allow: Array<"customer" | "busin
     if (!allow.includes(user.role)) router.replace("/");
   }, [allow, ready, router, user]);
 
-  if (!ready || !user || !allow.includes(user.role)) return <Skeleton className="h-40" />;
+  if (!ready || !user || !allow.includes(user.role)) return <StatGridSkeleton count={4} />;
   return <div className="contents">{children}</div>;
 }

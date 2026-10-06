@@ -30,6 +30,13 @@ class UserResource extends JsonResource
                 'status' => $business->status?->value ?? $business->status,
                 'pivot_role' => $business->pivot?->role,
             ])->values()),
+            'staff' => $this->whenLoaded('staffAssignments', fn () => $this->staffAssignments->map(fn ($row) => [
+                'venue_id' => $row->venue_id,
+                'venue_name' => $row->venue?->name,
+                'venue_slug' => $row->venue?->slug,
+                'business_id' => $row->business_id,
+                'roles' => $row->roles ?? [],
+            ])->values()),
         ];
     }
 }

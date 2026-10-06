@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, EmptyState, Field, Skeleton, inputClass, useToast } from "@/components/ui";
+import { StatGridSkeleton, TableListSkeleton } from "@/components/skeletons";
+import { Button, EmptyState, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { Venue } from "@/types";
@@ -50,7 +51,7 @@ export default function BusinessHomePage() {
     }
   }
 
-  if (!ready) return <Skeleton className="h-40" />;
+  if (!ready) return <StatGridSkeleton count={5} className="grid gap-3 sm:grid-cols-3" />;
   if (!user) return <EmptyState title="Prijavite se." body="Biznis panel je dostupan prijavljenim korisnicima." />;
 
   if (user.role === "customer") {
@@ -69,7 +70,18 @@ export default function BusinessHomePage() {
   }
 
   if (error) return <p className="text-coral">{error}</p>;
-  if (!data) return <Skeleton className="h-40" />;
+  if (!data) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Danas</p>
+          <h1 className="font-serif text-4xl">Pregled lokala</h1>
+        </div>
+        <StatGridSkeleton count={5} className="grid gap-3 sm:grid-cols-3" />
+        <TableListSkeleton count={3} />
+      </div>
+    );
+  }
 
   const stats = [
     ["Pregledi profila", data.profile_views],

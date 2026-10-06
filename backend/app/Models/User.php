@@ -58,6 +58,11 @@ class User extends Authenticatable implements MustVerifyEmail
             ->withTimestamps();
     }
 
+    public function staffAssignments(): HasMany
+    {
+        return $this->hasMany(VenueStaff::class);
+    }
+
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);

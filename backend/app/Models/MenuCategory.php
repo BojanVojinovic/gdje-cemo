@@ -8,7 +8,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MenuCategory extends Model
 {
-    protected $fillable = ['menu_id', 'name', 'sort_order'];
+    protected $fillable = ['menu_id', 'name', 'station', 'sort_order'];
+
+    public static function stationForName(string $name): string
+    {
+        return preg_match('/pić|pice|koktel|vino|pivo|kafa|kava|sok|bar|žest|napit/iu', $name) ? 'bar' : 'kitchen';
+    }
 
     public function menu(): BelongsTo
     {

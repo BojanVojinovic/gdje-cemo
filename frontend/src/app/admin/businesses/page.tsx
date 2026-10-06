@@ -1,6 +1,7 @@
 "use client";
 
 import { ComboBox } from "@/components/combo-box";
+import { InfoListSkeleton } from "@/components/skeletons";
 import { Button, EmptyState, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -23,11 +24,17 @@ export default function AdminBusinessesPage() {
   const [rows, setRows] = useState<BusinessRow[]>([]);
   const [status, setStatus] = useState("");
   const [reason, setReason] = useState<Record<number, string>>({});
+  const [loading, setLoading] = useState(true);
 
   async function load(next = status) {
     if (!token) return;
-    const response = await api<BusinessRow[]>(`/admin/businesses?status=${next}`, { token });
-    setRows(response.data);
+    setLoading(true);
+    try {
+      const response = await api<BusinessRow[]>(`/admin/businesses?status=${next}`, { token });
+      setRows(response.data);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { void load("").catch(() => undefined); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -61,8 +68,9 @@ export default function AdminBusinessesPage() {
           { value: "rejected", label: "Odbijeni" },
         ]} />
       </div>
-      {rows.length === 0 ? <EmptyState title="Nema biznisa." body="Novi zahtjevi će se pojaviti ovdje." /> : null}
-      <ul className="space-y-3">
+      {loading ? <InfoListSkeleton /> : null}
+      {!loading && rows.length === 0 ? <EmptyState title="Nema biznisa." body="Novi zahtjevi će se pojaviti ovdje." /> : null}
+      {!loading ? <ul className="space-y-3">
         {rows.map((row) => (
           <li key={row.id} className="rounded-lg border border-line bg-paper p-4">
             <p className="font-medium">{row.name} · {row.status}</p>
@@ -79,7 +87,7 @@ export default function AdminBusinessesPage() {
             ) : null}
           </li>
         ))}
-      </ul>
+      </ul> : null}
     </div>
   );
 }

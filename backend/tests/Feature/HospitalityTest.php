@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\Reservation;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\UserNotification;
 use App\Models\Venue;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -190,6 +191,162 @@ class HospitalityTest extends TestCase
 
         $this->assertSame('Lignje', $order['items'][0]['name_snapshot']);
         $this->assertEquals(14, $order['items'][0]['price_snapshot']);
+        $this->assertSame('kitchen', $order['items'][0]['station']);
+    }
+
+    public function test_guest_orders_from_qr_and_a_second_order_is_limited(): void
+    {
+        $owner = $this->user('business');
+        $venue = $this->makeVenue($owner);
+        $ownerToken = $owner->createToken('api')->plainTextToken;
+        $table = $this->withToken($ownerToken)->postJson('/api/business/venues/'.$venue->id.'/tables', [
+            'name' => 'T3',
+            'capacity_min' => 2,
+            'capacity_max' => 4,
+        ])->assertCreated()->json('data');
+        $category = $this->withToken($ownerToken)->postJson('/api/business/venues/'.$venue->id.'/menu/categories', [
+            'name' => 'Kuhinja',
+        ])->assertCreated()->json('data.id');
+        $item = $this->withToken($ownerToken)->postJson('/api/business/menu/categories/'.$category.'/items', [
+            'name' => 'Orada',
+            'price' => 18,
+        ])->assertCreated()->json('data.id');
+
+        $this->flushHeaders();
+        $opened = $this->postJson('/api/tables/qr/'.$table['qr_token'].'/session')->assertOk()->json('data');
+        $order = $this->postJson('/api/sessions/'.$opened['session_id'].'/orders', [
+            'guest_token' => $opened['guest_token'],
+            'items' => [['menu_item_id' => $item, 'quantity' => 2]],
+        ])->assertCreated()->json('data');
+
+        $this->assertNull($order['user_id']);
+        $this->postJson('/api/sessions/'.$opened['session_id'].'/orders', [
+            'guest_token' => $opened['guest_token'],
+            'items' => [['menu_item_id' => $item, 'quantity' => 1]],
+        ])->assertStatus(422)->assertJsonPath('errors.items.0', 'Sačekajte malo prije sljedeće narudžbine.');
+
+        $this->postJson('/api/sessions/'.$opened['session_id'].'/orders', [
+            'items' => [['menu_item_id' => $item, 'quantity' => 1]],
+        ])->assertForbidden();
+
+        $this->postJson('/api/sessions/'.$opened['session_id'].'/service', [
+            'type' => 'bill',
+            'guest_token' => 'pogresan-token',
+        ])->assertStatus(422);
+
+        $bill = $this->postJson('/api/sessions/'.$opened['session_id'].'/service', [
+            'type' => 'bill',
+            'guest_token' => $opened['guest_token'],
+        ])->assertCreated()->json('data.id');
+
+        $this->postJson('/api/sessions/'.$opened['session_id'].'/service', [
+            'type' => 'bill',
+            'guest_token' => $opened['guest_token'],
+        ])->assertOk()->assertJsonPath('data.id', $bill);
+    }
+
+    public function test_staff_roles_split_orders_and_waiter_gets_the_call(): void
+    {
+        $owner = $this->user('business');
+        $waiter = $this->user('customer');
+        $cook = $this->user('customer');
+        $stranger = $this->user('customer');
+        $venue = $this->makeVenue($owner);
+        $ownerToken = $owner->createToken('api')->plainTextToken;
+
+        $this->withToken($stranger->createToken('api')->plainTextToken)
+            ->postJson('/api/business/venues/'.$venue->id.'/staff', [
+                'email' => $waiter->email,
+                'roles' => ['waiter'],
+            ])->assertForbidden();
+
+        $this->withToken($ownerToken)->postJson('/api/business/venues/'.$venue->id.'/staff', [
+            'email' => $waiter->email,
+            'roles' => ['waiter', 'bar'],
+        ])->assertCreated()->assertJsonPath('data.roles', ['waiter', 'bar']);
+
+        $this->withToken($ownerToken)->postJson('/api/business/venues/'.$venue->id.'/staff', [
+            'email' => $cook->email,
+            'roles' => ['kitchen'],
+        ])->assertCreated();
+
+        $table = $this->withToken($ownerToken)->postJson('/api/business/venues/'.$venue->id.'/tables', [
+            'name' => 'T4',
+            'capacity_min' => 2,
+            'capacity_max' => 4,
+        ])->assertCreated()->json('data');
+        $food = $this->withToken($ownerToken)->postJson('/api/business/venues/'.$venue->id.'/menu/categories', [
+            'name' => 'Roštilj',
+            'station' => 'kitchen',
+        ])->assertCreated()->json('data.id');
+        $drinks = $this->withToken($ownerToken)->postJson('/api/business/venues/'.$venue->id.'/menu/categories', [
+            'name' => 'Piće',
+        ])->assertCreated()->json('data');
+        $this->assertSame('bar', $drinks['station']);
+        $foodItem = $this->withToken($ownerToken)->postJson('/api/business/menu/categories/'.$food.'/items', [
+            'name' => 'Lignje',
+            'price' => 14,
+        ])->assertCreated()->json('data.id');
+        $drinkItem = $this->withToken($ownerToken)->postJson('/api/business/menu/categories/'.$drinks['id'].'/items', [
+            'name' => 'Kafa',
+            'price' => 2,
+        ])->assertCreated()->json('data.id');
+
+        $this->flushHeaders();
+        $opened = $this->postJson('/api/tables/qr/'.$table['qr_token'].'/session')->assertOk()->json('data');
+        $this->postJson('/api/sessions/'.$opened['session_id'].'/service', [
+            'type' => 'bill',
+            'guest_token' => $opened['guest_token'],
+        ])->assertStatus(422);
+
+        $this->postJson('/api/sessions/'.$opened['session_id'].'/orders', [
+            'guest_token' => $opened['guest_token'],
+            'items' => [
+                ['menu_item_id' => $foodItem, 'quantity' => 1],
+                ['menu_item_id' => $drinkItem, 'quantity' => 1],
+            ],
+        ])->assertCreated();
+
+        $call = $this->postJson('/api/sessions/'.$opened['session_id'].'/service', [
+            'type' => 'waiter',
+            'guest_token' => $opened['guest_token'],
+        ])->assertCreated()->json('data.id');
+
+        $this->postJson('/api/sessions/'.$opened['session_id'].'/service', [
+            'type' => 'waiter',
+            'guest_token' => $opened['guest_token'],
+        ])->assertOk();
+
+        $this->assertSame(1, UserNotification::query()->where('user_id', $waiter->id)->where('type', 'TABLE_WAITER')->count());
+        $this->assertSame(0, UserNotification::query()->where('user_id', $owner->id)->where('type', 'TABLE_WAITER')->count());
+
+        $kitchen = $this->withToken($cook->createToken('api')->plainTextToken)
+            ->getJson('/api/staff/board')
+            ->assertOk()
+            ->json('data.venues.0');
+        $this->assertSame(['Lignje'], collect($kitchen['orders'][0]['items'])->pluck('name')->all());
+        $this->assertSame([], $kitchen['requests']);
+
+        $service = $this->withToken($waiter->createToken('api')->plainTextToken)
+            ->getJson('/api/staff/board')
+            ->assertOk()
+            ->json('data.venues.0');
+        $this->assertSame(['Lignje', 'Kafa'], collect($service['orders'][0]['items'])->pluck('name')->all());
+        $this->assertSame('waiter', $service['requests'][0]['type']);
+        $this->assertSame('T4', $service['requests'][0]['table']);
+
+        $this->withToken($cook->createToken('api')->plainTextToken)
+            ->postJson('/api/staff/requests/'.$call.'/done')
+            ->assertForbidden();
+
+        $this->withToken($waiter->createToken('api')->plainTextToken)
+            ->postJson('/api/staff/requests/'.$call.'/done')
+            ->assertOk();
+
+        $this->withToken($cook->createToken('api')->plainTextToken)
+            ->putJson('/api/staff/orders/'.$kitchen['orders'][0]['id'], ['status' => 'preparing'])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'preparing');
     }
 
     private function user(string $role): User

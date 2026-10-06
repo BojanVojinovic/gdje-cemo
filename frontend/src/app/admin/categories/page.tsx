@@ -1,6 +1,7 @@
 "use client";
 
 import { ComboBox } from "@/components/combo-box";
+import { InfoListSkeleton } from "@/components/skeletons";
 import { Button, EmptyState, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -13,10 +14,16 @@ export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [name, setName] = useState("");
   const [parentId, setParentId] = useState("");
+  const [loading, setLoading] = useState(true);
 
   async function load() {
-    const response = await api<Category[]>("/categories");
-    setCategories(response.data);
+    setLoading(true);
+    try {
+      const response = await api<Category[]>("/categories");
+      setCategories(response.data);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { void load(); }, []);
@@ -60,8 +67,9 @@ export default function AdminCategoriesPage() {
         </Field>
         <div className="self-end"><Button type="submit">Dodaj</Button></div>
       </form>
-      {categories.length === 0 ? <EmptyState title="Nema kategorija." body="Dodajte prvu kategoriju." /> : null}
-      <ul className="space-y-3">
+      {loading ? <InfoListSkeleton /> : null}
+      {!loading && categories.length === 0 ? <EmptyState title="Nema kategorija." body="Dodajte prvu kategoriju." /> : null}
+      {!loading ? <ul className="space-y-3">
         {categories.map((category) => (
           <li key={category.id} className="rounded-lg border border-line bg-paper p-4">
             <div className="flex items-center justify-between gap-3">
@@ -78,7 +86,7 @@ export default function AdminCategoriesPage() {
             </ul>
           </li>
         ))}
-      </ul>
+      </ul> : null}
     </div>
   );
 }

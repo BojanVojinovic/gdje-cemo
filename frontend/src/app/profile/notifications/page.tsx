@@ -1,5 +1,6 @@
 "use client";
 
+import { NoticeListSkeleton } from "@/components/skeletons";
 import { Button, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -30,6 +31,7 @@ export default function NotificationsPage() {
   const toast = useToast();
   const [preferences, setPreferences] = useState<Preferences | null>(null);
   const [items, setItems] = useState<Notice[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (ready && !user) router.replace("/login");
@@ -37,8 +39,11 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     if (!token) return;
-    api<Preferences>("/me/notification-preferences", { token }).then((response) => setPreferences(response.data)).catch(() => undefined);
-    api<Notice[]>("/me/notifications", { token }).then((response) => setItems(response.data)).catch(() => undefined);
+    setLoading(true);
+    Promise.all([
+      api<Preferences>("/me/notification-preferences", { token }).then((response) => setPreferences(response.data)),
+      api<Notice[]>("/me/notifications", { token }).then((response) => setItems(response.data)),
+    ]).catch(() => undefined).finally(() => setLoading(false));
   }, [token]);
 
   async function save(event: React.FormEvent) {
@@ -53,7 +58,8 @@ export default function NotificationsPage() {
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-10">
       <Link href="/profile" className="text-sm text-sea">Profil</Link>
       <h1 className="font-serif text-4xl">Obavještenja</h1>
-      {preferences ? (
+      {loading ? <NoticeListSkeleton /> : null}
+      {!loading && preferences ? (
         <form onSubmit={save} className="space-y-2 rounded-lg border border-line bg-paper p-4">
           {fields.map(([key, label]) => (
             <label key={key} className="flex min-h-11 items-center gap-2 text-sm">
@@ -64,7 +70,7 @@ export default function NotificationsPage() {
           <Button type="submit">Sačuvaj</Button>
         </form>
       ) : null}
-      <ul className="space-y-2">
+      {!loading ? <ul className="space-y-2">
         {items.map((item) => (
           <li key={item.id} className={`border border-line bg-paper px-4 py-3 ${item.read_at ? "" : "border-l-4 border-l-sea"}`}>
             <p className="font-medium">{item.title}</p>
@@ -79,7 +85,7 @@ export default function NotificationsPage() {
             ) : null}
           </li>
         ))}
-      </ul>
+      </ul> : null}
     </div>
   );
 }

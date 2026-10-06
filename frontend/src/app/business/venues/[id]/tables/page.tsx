@@ -1,6 +1,7 @@
 "use client";
 
 import { ComboBox } from "@/components/combo-box";
+import { InfoListSkeleton } from "@/components/skeletons";
 import { Button, Field, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -30,7 +31,7 @@ export default function TablesPage() {
     await load();
   }
 
-  if (!plan) return <p className="text-sm text-muted">Učitavanje stolova…</p>;
+  if (!plan) return <InfoListSkeleton />;
 
   return (
     <div className="space-y-4">

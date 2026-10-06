@@ -2,6 +2,7 @@
 
 import { ComboBox } from "@/components/combo-box";
 import { FloorCanvas, TableLegend } from "@/components/floor-canvas";
+import { FloorEditorSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -120,7 +121,7 @@ export default function FloorPlanEditorPage() {
     }
   }
 
-  if (!plan) return <p className="text-sm text-muted">Učitavanje tlocrta…</p>;
+  if (!plan) return <FloorEditorSkeleton />;
 
   return (
     <div className="space-y-6">

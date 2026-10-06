@@ -48,6 +48,7 @@ export type MenuItem = {
 export type MenuCategory = {
   id: number;
   name: string;
+  station?: "kitchen" | "bar";
   sort_order: number;
   items?: MenuItem[];
 };
@@ -137,6 +138,15 @@ export type User = {
   email_verified_at: string | null;
   created_at: string;
   businesses?: BusinessMembership[];
+  staff?: StaffAssignment[];
+};
+
+export type StaffAssignment = {
+  venue_id: number;
+  venue_name: string;
+  venue_slug: string;
+  business_id: number;
+  roles: Array<"waiter" | "bar" | "kitchen">;
 };
 
 export type Promotion = {

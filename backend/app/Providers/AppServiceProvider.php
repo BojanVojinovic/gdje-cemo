@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\DiningSession;
+use App\Models\Order;
 use App\Models\Reservation;
 use App\Models\Review;
 use App\Models\User;
@@ -41,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
             'venue_table' => VenueTable::class,
             'reservation' => Reservation::class,
             'dining_session' => DiningSession::class,
+            'order' => Order::class,
         ]);
 
         Route::bind('zone', fn (string $value) => VenueZone::query()->findOrFail($value));
@@ -62,6 +64,12 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('auth', function (Request $request) {
             $limit = app()->environment('testing') ? 200 : 10;
+
+            return Limit::perMinute($limit)->by($request->ip());
+        });
+
+        RateLimiter::for('table-session', function (Request $request) {
+            $limit = app()->environment('testing') ? 60 : 8;
 
             return Limit::perMinute($limit)->by($request->ip());
         });

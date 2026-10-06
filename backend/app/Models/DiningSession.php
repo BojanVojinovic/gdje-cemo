@@ -41,4 +41,14 @@ class DiningSession extends Model
     {
         return $this->hasMany(Order::class);
     }
+
+    public function guests(): HasMany
+    {
+        return $this->hasMany(DiningSessionGuest::class);
+    }
+
+    public function requests(): HasMany
+    {
+        return $this->hasMany(TableServiceRequest::class);
+    }
 }

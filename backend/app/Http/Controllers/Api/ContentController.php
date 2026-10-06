@@ -69,7 +69,7 @@ class ContentController extends Controller
         return ApiResponse::paginated($rows, \App\Http\Resources\VenueContentResource::class);
     }
 
-    public function showEvent(string $slug, ContentService $content): JsonResponse
+    public function showEvent(Request $request, string $slug, ContentService $content): JsonResponse
     {
         $content->sync();
         $event = VenueContent::query()->with('venue')->where('slug', $slug)->where('type', ContentType::Event)->firstOrFail();
@@ -87,10 +87,14 @@ class ContentController extends Controller
             ->get();
 
         $registered = $event->registrations()->where('status', 'registered')->count();
+        $viewer = $request->user('sanctum');
 
         return ApiResponse::success([
             'event' => (new \App\Http\Resources\VenueContentResource($event))->resolve(),
             'registered' => $registered,
+            'is_registered' => $viewer
+                ? $event->registrations()->where('user_id', $viewer->id)->where('status', 'registered')->exists()
+                : false,
             'spots_remaining' => $event->capacity ? max(0, $event->capacity - $registered) : null,
             'related' => \App\Http\Resources\VenueContentResource::collection($related)->resolve(),
         ]);

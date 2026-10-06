@@ -1,6 +1,7 @@
 "use client";
 
 import { ComboBox } from "@/components/combo-box";
+import { InfoListSkeleton } from "@/components/skeletons";
 import { EmptyState, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -13,11 +14,17 @@ export default function AdminReportsPage() {
   const toast = useToast();
   const [reports, setReports] = useState<Report[]>([]);
   const [status, setStatus] = useState("pending");
+  const [loading, setLoading] = useState(true);
 
   async function load(next = status) {
     if (!token) return;
-    const response = await api<Report[]>(`/admin/reports?status=${next}`, { token });
-    setReports(response.data);
+    setLoading(true);
+    try {
+      const response = await api<Report[]>(`/admin/reports?status=${next}`, { token });
+      setReports(response.data);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { void load("pending").catch(() => undefined); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -41,8 +48,9 @@ export default function AdminReportsPage() {
           { value: "rejected", label: "Odbijeno" },
         ]} />
       </div>
-      {reports.length === 0 ? <EmptyState title="Nema prijava." body="Kad neko prijavi sadržaj, pojaviće se ovdje." /> : null}
-      <ul className="space-y-3">
+      {loading ? <InfoListSkeleton /> : null}
+      {!loading && reports.length === 0 ? <EmptyState title="Nema prijava." body="Kad neko prijavi sadržaj, pojaviće se ovdje." /> : null}
+      {!loading ? <ul className="space-y-3">
         {reports.map((report) => (
           <li key={report.id} className="rounded-lg border border-line bg-paper p-4 text-sm">
             <p className="font-medium">{report.reportable_type} #{report.reportable_id} · {report.reason} · {report.status}</p>
@@ -55,7 +63,7 @@ export default function AdminReportsPage() {
             </div>
           </li>
         ))}
-      </ul>
+      </ul> : null}
     </div>
   );
 }

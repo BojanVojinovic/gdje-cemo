@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoListSkeleton } from "@/components/skeletons";
 import { Button, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -10,11 +11,17 @@ export default function AdminContentPage() {
   const { token } = useAuth();
   const toast = useToast();
   const [items, setItems] = useState<VenueContentItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   async function load() {
     if (!token) return;
-    const response = await api<VenueContentItem[]>("/admin/content", { token });
-    setItems(response.data);
+    setLoading(true);
+    try {
+      const response = await api<VenueContentItem[]>("/admin/content", { token });
+      setItems(response.data);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { void load().catch(() => undefined); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -29,7 +36,7 @@ export default function AdminContentPage() {
   return (
     <div className="space-y-4">
       <h1 className="font-serif text-4xl">Sadržaj</h1>
-      <ul className="space-y-3">
+      {loading ? <InfoListSkeleton /> : <ul className="space-y-3">
         {items.map((item) => (
           <li key={item.id} className="rounded-lg border border-line bg-paper p-4">
             <p className="text-xs text-muted">{contentTypeLabel[item.type]} · {contentStatusLabel[item.status] ?? item.status} · {item.venue?.name}</p>
@@ -44,7 +51,7 @@ export default function AdminContentPage() {
             </div>
           </li>
         ))}
-      </ul>
+      </ul>}
     </div>
   );
 }

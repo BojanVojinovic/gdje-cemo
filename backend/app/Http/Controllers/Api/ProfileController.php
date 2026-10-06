@@ -17,7 +17,7 @@ class ProfileController extends Controller
     public function show(Request $request): JsonResponse
     {
         return ApiResponse::success(
-            new UserResource($request->user()->load('role', 'businesses'))
+            new UserResource($request->user()->load('role', 'businesses', 'staffAssignments.venue'))
         );
     }
 
@@ -39,7 +39,7 @@ class ProfileController extends Controller
         }
 
         return ApiResponse::success(
-            new UserResource($user->load('role', 'businesses')),
+            new UserResource($user->load('role', 'businesses', 'staffAssignments.venue')),
             $emailChanged ? 'Profil je sačuvan. Potvrdite novu email adresu.' : 'Profil je sačuvan.'
         );
     }
@@ -67,7 +67,7 @@ class ProfileController extends Controller
         $images->delete($user->avatar_path);
         $user->update(['avatar_path' => $stored['path']]);
 
-        return ApiResponse::success(new UserResource($user->load('role', 'businesses')), 'Fotografija profila je sačuvana.');
+        return ApiResponse::success(new UserResource($user->load('role', 'businesses', 'staffAssignments.venue')), 'Fotografija profila je sačuvana.');
     }
 
     public function deleteAvatar(Request $request, ImageService $images): JsonResponse
@@ -76,7 +76,7 @@ class ProfileController extends Controller
         $images->delete($user->avatar_path);
         $user->update(['avatar_path' => null]);
 
-        return ApiResponse::success(new UserResource($user->load('role', 'businesses')), 'Fotografija profila je uklonjena.');
+        return ApiResponse::success(new UserResource($user->load('role', 'businesses', 'staffAssignments.venue')), 'Fotografija profila je uklonjena.');
     }
 
     public function reviews(Request $request): JsonResponse

@@ -1,6 +1,7 @@
 "use client";
 
 import { ComboBox } from "@/components/combo-box";
+import { ReviewListSkeleton } from "@/components/skeletons";
 import { Button, EmptyState, Field, Modal, Stars, inputClass, useToast } from "@/components/ui";
 import { api, ApiError, fieldError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -112,9 +113,9 @@ export function ReviewSection({
         <Button type="submit" loading={submitting}>Objavi recenziju</Button>
       </form>
 
-      {loading ? <p className="text-sm text-muted">Učitavanje recenzija…</p> : null}
+      {loading ? <ReviewListSkeleton /> : null}
       {!loading && reviews.length === 0 ? <EmptyState title="Nema recenzija." body="Budite prvi koji će opisati ovo mjesto." /> : null}
-      <ul className="space-y-4">
+      {!loading ? <ul className="space-y-4">
         {reviews.map((review) => (
           <li key={review.id} className="rounded-lg border border-line bg-paper p-4">
             <div className="flex items-center justify-between gap-3">
@@ -142,7 +143,7 @@ export function ReviewSection({
             </div>
           </li>
         ))}
-      </ul>
+      </ul> : null}
       {meta && meta.last_page > 1 ? (
         <div className="flex justify-center gap-2">
           <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Prethodna</Button>
@@ -158,7 +159,7 @@ function ReportControl({ reviewId }: { reviewId: number }) {
   return <ReportInline type="review" id={reviewId} />;
 }
 
-function EditReviewModal({ review, onClose, onSaved }: { review: Review | null; onClose: () => void; onSaved: () => void }) {
+export function EditReviewModal({ review, onClose, onSaved }: { review: Review | null; onClose: () => void; onSaved: () => void }) {
   const { token } = useAuth();
   const toast = useToast();
   const [rating, setRating] = useState(review?.rating ?? 5);

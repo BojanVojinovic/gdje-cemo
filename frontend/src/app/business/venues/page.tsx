@@ -1,6 +1,7 @@
 "use client";
 
-import { EmptyState, Skeleton } from "@/components/ui";
+import { TableListSkeleton } from "@/components/skeletons";
+import { EmptyState } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { PageMeta, Venue } from "@/types";
@@ -23,7 +24,14 @@ export default function MyVenuesPage() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  if (loading) return <Skeleton className="h-40" />;
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-serif text-4xl">Moja mjesta</h1>
+        <TableListSkeleton />
+      </div>
+    );
+  }
   if (!venues.length) return <EmptyState title="Nemate mjesta." body="Dodajte prvi lokal da se pojavi u pretrazi." action={<Link href="/business/venues/new" className="text-sea">Novo mjesto</Link>} />;
 
   return (

@@ -46,6 +46,7 @@ export function SiteHeader() {
             ))}
           </nav>
           <div className="hidden items-center gap-2 md:flex">
+            {user?.staff?.length ? <Link href="/staff" className="px-3 text-sm">Osoblje</Link> : null}
             {user?.role === "customer" ? <Link href="/business" className="px-3 text-sm text-muted">Za partnere</Link> : null}
             {user?.role === "business" || user?.role === "admin" ? <Link href="/business" className="px-3 text-sm">Biznis</Link> : null}
             {user?.role === "admin" ? <Link href="/admin" className="px-3 text-sm">Admin</Link> : null}
@@ -75,6 +76,7 @@ export function SiteHeader() {
               <Link key={link.href} href={link.href} className="block min-h-11 py-2" onClick={() => setOpen(false)}>{link.label}</Link>
             ))}
             {user ? <Link href="/profile" className="block min-h-11 py-2" onClick={() => setOpen(false)}>Profil</Link> : <Link href="/login" className="block min-h-11 py-2" onClick={() => setOpen(false)}>Prijava</Link>}
+            {user?.staff?.length ? <Link href="/staff" className="block min-h-11 py-2" onClick={() => setOpen(false)}>Osoblje</Link> : null}
             {user?.role === "customer" ? <Link href="/business" className="block min-h-11 py-2" onClick={() => setOpen(false)}>Za partnere</Link> : null}
             {user?.role === "business" || user?.role === "admin" ? <Link href="/business" className="block min-h-11 py-2" onClick={() => setOpen(false)}>Biznis</Link> : null}
             {user?.role === "admin" ? <Link href="/admin" className="block min-h-11 py-2" onClick={() => setOpen(false)}>Admin</Link> : null}

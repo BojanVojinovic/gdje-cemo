@@ -1,5 +1,6 @@
 "use client";
 
+import { SettingsFormSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -14,15 +15,21 @@ export default function AdminSettingsPage() {
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [link, setLink] = useState("");
+  const [loading, setLoading] = useState(true);
 
   async function load() {
     if (!token) return;
-    const [settingsResponse, promotionsResponse] = await Promise.all([
-      api<typeof settings>("/admin/settings", { token }),
-      api<Promotion[]>("/admin/promotions", { token }),
-    ]);
-    setSettings({ ...settings, ...settingsResponse.data });
-    setPromotions(promotionsResponse.data);
+    setLoading(true);
+    try {
+      const [settingsResponse, promotionsResponse] = await Promise.all([
+        api<typeof settings>("/admin/settings", { token }),
+        api<Promotion[]>("/admin/promotions", { token }),
+      ]);
+      setSettings({ ...settings, ...settingsResponse.data });
+      setPromotions(promotionsResponse.data);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { void load().catch(() => undefined); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -57,14 +64,14 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-8">
       <h1 className="font-serif text-4xl">Podešavanja</h1>
-      <form onSubmit={save} className="space-y-3 rounded-lg border border-line bg-paper p-5">
+      {loading ? <SettingsFormSkeleton /> : <form onSubmit={save} className="space-y-3 rounded-lg border border-line bg-paper p-5">
         <Field label="Naziv sajta"><input className={inputClass} value={settings.site_name} onChange={(event) => setSettings({ ...settings, site_name: event.target.value })} /></Field>
         <Field label="Rečenica"><input className={inputClass} value={settings.tagline} onChange={(event) => setSettings({ ...settings, tagline: event.target.value })} /></Field>
         <Field label="Email podrške"><input className={inputClass} type="email" value={settings.support_email} onChange={(event) => setSettings({ ...settings, support_email: event.target.value })} /></Field>
         <Field label="Podrazumijevani grad"><input className={inputClass} value={settings.default_city} onChange={(event) => setSettings({ ...settings, default_city: event.target.value })} /></Field>
         <Button type="submit">Sačuvaj</Button>
-      </form>
-      <section className="space-y-3">
+      </form>}
+      {!loading ? <section className="space-y-3">
         <h2 className="font-serif text-2xl">Istaknuti sadržaj</h2>
         <form onSubmit={addPromotion} className="grid gap-2 md:grid-cols-3">
           <input className={inputClass} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Naslov" required />
@@ -80,7 +87,7 @@ export default function AdminSettingsPage() {
             </li>
           ))}
         </ul>
-      </section>
+      </section> : null}
     </div>
   );
 }

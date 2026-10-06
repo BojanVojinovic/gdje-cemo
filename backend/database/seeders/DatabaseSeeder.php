@@ -8,6 +8,7 @@ use App\Enums\ReviewStatus;
 use App\Enums\VenueStatus;
 use App\Enums\VerificationStatus;
 use App\Models\Amenity;
+use App\Models\MenuCategory;
 use App\Models\Business;
 use App\Models\Category;
 use App\Models\Promotion;
@@ -607,6 +608,7 @@ class DatabaseSeeder extends Seeder
         foreach ($data['menu'] as $categoryName => $items) {
             $category = $menu->categories()->create([
                 'name' => $categoryName,
+                'station' => MenuCategory::stationForName($categoryName),
                 'sort_order' => $order++,
             ]);
             foreach ($items as $itemIndex => [$name, $description, $price]) {

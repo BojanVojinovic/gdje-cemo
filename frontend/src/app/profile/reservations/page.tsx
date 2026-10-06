@@ -1,5 +1,6 @@
 "use client";
 
+import { ReservationListSkeleton } from "@/components/skeletons";
 import { Button, EmptyState, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -24,6 +25,7 @@ export default function MyReservationsPage() {
   const router = useRouter();
   const toast = useToast();
   const [rows, setRows] = useState<ReservationRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (ready && !user) router.replace("/login");
@@ -31,7 +33,11 @@ export default function MyReservationsPage() {
 
   useEffect(() => {
     if (!token) return;
-    api<ReservationRow[]>("/me/reservations", { token }).then((response) => setRows(response.data)).catch(() => undefined);
+    setLoading(true);
+    api<ReservationRow[]>("/me/reservations", { token })
+      .then((response) => setRows(response.data))
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
   }, [token]);
 
   async function cancel(id: number) {
@@ -39,10 +45,13 @@ export default function MyReservationsPage() {
     try {
       await api(`/reservations/${id}/cancel`, { method: "POST", token });
       toast("Rezervacija je otkazana.");
+      setLoading(true);
       const response = await api<ReservationRow[]>("/me/reservations", { token });
       setRows(response.data);
     } catch (reason) {
       toast(reason instanceof ApiError ? (reason.errors?.status?.[0] || reason.message) : "Otkazivanje nije uspjelo.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -50,7 +59,8 @@ export default function MyReservationsPage() {
     <div className="mx-auto max-w-3xl space-y-4 px-4 py-10">
       <Link href="/profile" className="text-sm text-sea">Profil</Link>
       <h1 className="font-serif text-4xl">Moje rezervacije</h1>
-      <ul className="space-y-3">
+      {loading ? <ReservationListSkeleton /> : null}
+      {!loading ? <ul className="space-y-3">
         {rows.map((row) => (
           <li key={row.id} className="rounded-lg border border-line bg-paper p-4">
             <p className="font-medium">{row.venue?.name}</p>
@@ -60,8 +70,8 @@ export default function MyReservationsPage() {
             {row.status === "pending" || row.status === "confirmed" ? <Button className="mt-3" variant="secondary" onClick={() => void cancel(row.id)}>Otkaži</Button> : null}
           </li>
         ))}
-      </ul>
-      {rows.length === 0 ? <EmptyState title="Nemate rezervacija." body="Izaberite mjesto i zakažite sto za večeru." action={<Link href="/places" className="text-sm font-semibold text-sea">Pronađi mjesto</Link>} /> : null}
+      </ul> : null}
+      {!loading && rows.length === 0 ? <EmptyState title="Nemate rezervacija." body="Izaberite mjesto i zakažite sto za večeru." action={<Link href="/places" className="text-sm font-semibold text-sea">Pronađi mjesto</Link>} /> : null}
     </div>
   );
 }

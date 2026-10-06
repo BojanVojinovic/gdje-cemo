@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { Skeleton } from "@/components/ui";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   latitude: number;
@@ -10,6 +11,7 @@ type Props = {
 
 export function VenueMap({ latitude, longitude, label }: Props) {
   const node = useRef<HTMLDivElement>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let map: { remove: () => void } | null = null;
@@ -34,6 +36,7 @@ export function VenueMap({ latitude, longitude, label }: Props) {
       }).addTo(instance).bindPopup(label);
       requestAnimationFrame(() => instance.invalidateSize());
       map = instance;
+      setReady(true);
     }
 
     void mount();
@@ -45,7 +48,8 @@ export function VenueMap({ latitude, longitude, label }: Props) {
   }, [latitude, longitude, label]);
 
   return (
-    <div className="h-40 w-full overflow-hidden rounded-lg border border-line">
+    <div className="relative h-40 w-full overflow-hidden rounded-lg border border-line">
+      {ready ? null : <Skeleton className="absolute inset-0 h-full rounded-none" />}
       <div ref={node} className="h-full w-full" role="img" aria-label={`Mapa: ${label}`} />
     </div>
   );

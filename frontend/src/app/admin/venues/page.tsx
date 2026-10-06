@@ -1,5 +1,6 @@
 "use client";
 
+import { TableListSkeleton } from "@/components/skeletons";
 import { Button, EmptyState, inputClass, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -14,12 +15,18 @@ export default function AdminVenuesPage() {
   const [meta, setMeta] = useState<PageMeta | null>(null);
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
 
   async function load(query = q) {
     if (!token) return;
-    const response = await api<Venue[]>(`/admin/venues?q=${encodeURIComponent(query)}`, { token });
-    setVenues(response.data);
-    setMeta(response.meta ?? null);
+    setLoading(true);
+    try {
+      const response = await api<Venue[]>(`/admin/venues?q=${encodeURIComponent(query)}`, { token });
+      setVenues(response.data);
+      setMeta(response.meta ?? null);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { void load("").catch(() => undefined); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -53,8 +60,9 @@ export default function AdminVenuesPage() {
         <Button variant="secondary" onClick={() => bulk("unfeature")}>Skini isticanje</Button>
         <Button variant="secondary" onClick={() => bulk("verify")}>Potvrdi</Button>
       </div>
-      {venues.length === 0 ? <EmptyState title="Nema mjesta." body="Pretraga nema rezultata." /> : null}
-      <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-paper">
+      {loading ? <TableListSkeleton /> : null}
+      {!loading && venues.length === 0 ? <EmptyState title="Nema mjesta." body="Pretraga nema rezultata." /> : null}
+      {!loading ? <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-paper">
         {venues.map((venue) => (
           <li key={venue.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
             <label className="flex items-center gap-3">
@@ -67,8 +75,8 @@ export default function AdminVenuesPage() {
             </span>
           </li>
         ))}
-      </ul>
-      {meta ? <p className="text-sm text-muted">{meta.total} mjesta</p> : null}
+      </ul> : null}
+      {!loading && meta ? <p className="text-sm text-muted">{meta.total} mjesta</p> : null}
     </div>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { VenueForm } from "@/components/venue-form";
-import { Button, Field, Skeleton, inputClass, useToast } from "@/components/ui";
+import { FieldSkeleton, StatGridSkeleton } from "@/components/skeletons";
+import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatDate, formatPrice } from "@/lib/format";
@@ -17,7 +18,7 @@ export default function ManageVenuePage() {
   const router = useRouter();
   const { token } = useAuth();
   const [detail, setDetail] = useState<Detail | null>(null);
-  const [tab, setTab] = useState<"info" | "photos" | "hours" | "menu" | "reviews">("info");
+  const [tab, setTab] = useState<"info" | "photos" | "hours" | "menu" | "reviews" | "staff">("info");
   const [reviews, setReviews] = useState<Review[]>([]);
 
   async function load() {
@@ -28,7 +29,18 @@ export default function ManageVenuePage() {
 
   useEffect(() => { void load().catch(() => undefined); }, [token, params.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!detail) return <Skeleton className="h-64" />;
+  if (!detail) {
+    return (
+      <div className="space-y-5" aria-busy="true">
+        <span className="sr-only">Učitavanje</span>
+        <div className="h-10 w-72 animate-pulse rounded bg-line" />
+        <StatGridSkeleton count={5} className="grid gap-3 sm:grid-cols-3" />
+        <div className="grid gap-3 md:grid-cols-2">
+          {Array.from({ length: 8 }, (_, index) => <FieldSkeleton key={index} />)}
+        </div>
+      </div>
+    );
+  }
   const venue = detail.venue;
 
   return (
@@ -45,9 +57,9 @@ export default function ManageVenuePage() {
         </div>
       </div>
       <div className="flex gap-2 overflow-x-auto">
-        {(["info", "photos", "hours", "menu", "reviews"] as const).map((item) => (
+        {(["info", "photos", "hours", "menu", "staff", "reviews"] as const).map((item) => (
           <button key={item} type="button" onClick={() => setTab(item)} className={`min-h-11 rounded-full px-4 text-sm ${tab === item ? "bg-sea text-snow" : "bg-paper"}`}>
-            {{ info: "Podaci", photos: "Fotografije", hours: "Radno vrijeme", menu: "Meni", reviews: "Recenzije" }[item]}
+            {{ info: "Podaci", photos: "Fotografije", hours: "Radno vrijeme", menu: "Meni", staff: "Osoblje", reviews: "Recenzije" }[item]}
           </button>
         ))}
       </div>
@@ -55,6 +67,7 @@ export default function ManageVenuePage() {
       {tab === "photos" ? <Photos venue={venue} onChange={load} /> : null}
       {tab === "hours" ? <Hours venue={venue} onChange={load} /> : null}
       {tab === "menu" ? <MenuEditor venue={venue} onChange={load} /> : null}
+      {tab === "staff" ? <StaffPanel venueId={venue.id} /> : null}
       {tab === "reviews" ? <Reviews venueId={venue.id} reviews={reviews} setReviews={setReviews} /> : null}
       <Button
         variant="danger"
@@ -188,13 +201,15 @@ function MenuEditor({ venue, onChange }: { venue: Venue; onChange: () => Promise
   const { token } = useAuth();
   const toast = useToast();
   const [name, setName] = useState("");
+  const [station, setStation] = useState<"kitchen" | "bar">("kitchen");
   const categories = venue.menu?.categories ?? [];
 
   async function addCategory(event: React.FormEvent) {
     event.preventDefault();
     if (!token) return;
-    await api(`/business/venues/${venue.id}/menu/categories`, { method: "POST", token, body: { name } });
+    await api(`/business/venues/${venue.id}/menu/categories`, { method: "POST", token, body: { name, station } });
     setName("");
+    setStation("kitchen");
     await onChange();
   }
 
@@ -262,10 +277,20 @@ function MenuEditor({ venue, onChange }: { venue: Venue; onChange: () => Promise
     }
   }
 
+  async function setCategoryStation(category: MenuCategory, next: "kitchen" | "bar") {
+    if (!token) return;
+    await api(`/business/menu/categories/${category.id}`, { method: "PUT", token, body: { name: category.name, station: next } });
+    await onChange();
+  }
+
   return (
     <div className="space-y-4">
-      <form onSubmit={addCategory} className="flex gap-2">
+      <form onSubmit={addCategory} className="flex flex-wrap gap-2">
         <input className={inputClass} value={name} onChange={(event) => setName(event.target.value)} placeholder="Nova kategorija menija" required />
+        <select className={inputClass + " max-w-40"} value={station} onChange={(event) => setStation(event.target.value as "kitchen" | "bar")}>
+          <option value="kitchen">Kuhinja</option>
+          <option value="bar">Šank</option>
+        </select>
         <Button type="submit">Dodaj</Button>
       </form>
       {categories.length === 0 ? <p className="text-sm text-muted">Nema stavki menija.</p> : null}
@@ -282,6 +307,7 @@ function MenuEditor({ venue, onChange }: { venue: Venue; onChange: () => Promise
           onRemoveCategory={removeCategory}
           onMoveItem={(id, direction) => moveItem(category, id, direction)}
           onImage={uploadItemImage}
+          onStation={(next) => setCategoryStation(category, next)}
         />
       ))}
     </div>
@@ -299,6 +325,7 @@ function CategoryBlock({
   onRemoveCategory,
   onMoveItem,
   onImage,
+  onStation,
 }: {
   category: MenuCategory;
   canMoveUp: boolean;
@@ -310,6 +337,7 @@ function CategoryBlock({
   onRemoveCategory: (id: number) => Promise<void>;
   onMoveItem: (id: number, direction: -1 | 1) => Promise<void>;
   onImage: (id: number, file: File) => Promise<void>;
+  onStation: (station: "kitchen" | "bar") => Promise<void>;
 }) {
   const [itemName, setItemName] = useState("");
   const [price, setPrice] = useState("");
@@ -317,7 +345,13 @@ function CategoryBlock({
   return (
     <section className="rounded-lg border border-line bg-paper p-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-medium">{category.name}</h2>
+        <span className="flex items-center gap-3">
+          <h2 className="font-medium">{category.name}</h2>
+          <select className={inputClass + " w-32 py-1"} value={category.station ?? "kitchen"} onChange={(event) => void onStation(event.target.value as "kitchen" | "bar")}>
+            <option value="kitchen">Kuhinja</option>
+            <option value="bar">Šank</option>
+          </select>
+        </span>
         <span className="flex gap-3 text-sm">
           <button type="button" disabled={!canMoveUp} onClick={() => onMove(-1)}>Gore</button>
           <button type="button" disabled={!canMoveDown} onClick={() => onMove(1)}>Dolje</button>
@@ -386,5 +420,93 @@ function Reviews({ venueId, reviews, setReviews }: { venueId: number; reviews: R
         </li>
       ))}
     </ul>
+  );
+}
+
+const staffRoles = [
+  { id: "waiter", label: "Konobar" },
+  { id: "bar", label: "Šank" },
+  { id: "kitchen", label: "Kuhinja" },
+] as const;
+
+function StaffPanel({ venueId }: { venueId: number }) {
+  const { token } = useAuth();
+  const toast = useToast();
+  const [rows, setRows] = useState<{ id: number; name: string; email: string; roles: string[] }[]>([]);
+  const [email, setEmail] = useState("");
+  const [roles, setRoles] = useState<string[]>(["waiter"]);
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const response = await api<typeof rows>(`/business/venues/${venueId}/staff`, { token });
+      setRows(response.data);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { void load().catch(() => undefined); }, [token, venueId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function save(event: React.FormEvent) {
+    event.preventDefault();
+    if (!token || roles.length === 0) return;
+    try {
+      await api(`/business/venues/${venueId}/staff`, { method: "POST", token, body: { email, roles } });
+      setEmail("");
+      toast("Osoblje je sačuvano.");
+      await load();
+    } catch (error) {
+      const detail = error instanceof ApiError ? error.errors?.email?.[0] || error.message : "Osoblje nije sačuvano.";
+      toast(detail);
+    }
+  }
+
+  async function remove(id: number) {
+    if (!token || !window.confirm("Ukloniti ovu osobu sa lokala?")) return;
+    await api(`/business/venues/${venueId}/staff/${id}`, { method: "DELETE", token });
+    toast("Osoblje je uklonjeno.");
+    await load();
+  }
+
+  return (
+    <div className="space-y-4">
+      <form onSubmit={(event) => void save(event)} className="space-y-3 rounded-lg border border-line bg-paper p-4">
+        <Field label="Email naloga">
+          <input className={inputClass} type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="ime@email.com" required />
+        </Field>
+        <div className="flex flex-wrap gap-4 text-sm">
+          {staffRoles.map((role) => (
+            <label key={role.id} className="flex min-h-11 items-center gap-2">
+              <input
+                type="checkbox"
+                checked={roles.includes(role.id)}
+                onChange={() => setRoles((current) => current.includes(role.id) ? current.filter((item) => item !== role.id) : [...current, role.id])}
+              />
+              {role.label}
+            </label>
+          ))}
+        </div>
+        <Button type="submit" disabled={roles.length === 0}>Dodaj osoblje</Button>
+      </form>
+      {loading ? <FieldSkeleton /> : null}
+      {!loading ? (
+        <ul className="space-y-2">
+          {rows.length === 0 ? <li className="text-sm text-muted">Niko još nije dodijeljen ovom lokalu.</li> : null}
+          {rows.map((row) => (
+            <li key={row.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-paper p-4 text-sm">
+              <span>
+                <span className="font-medium">{row.name}</span>
+                <span className="mt-1 block text-muted">{row.email}</span>
+                <span className="mt-1 block">{row.roles.map((role) => staffRoles.find((item) => item.id === role)?.label ?? role).join(", ")}</span>
+              </span>
+              <button type="button" className="text-coral" onClick={() => void remove(row.id)}>Ukloni</button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }

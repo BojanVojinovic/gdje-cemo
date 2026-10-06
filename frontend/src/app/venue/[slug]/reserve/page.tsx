@@ -2,6 +2,7 @@
 
 import { ComboBox } from "@/components/combo-box";
 import { FloorCanvas, TableLegend } from "@/components/floor-canvas";
+import { ReservePageSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -119,7 +120,7 @@ export default function ReservePage() {
   const chosenTable = availability?.tables.find((table) => table.id === selected);
   const chosenCombo = availability?.combinations.find((row) => row.id === combination);
 
-  if (!ready) return <p className="mx-auto max-w-5xl px-4 py-8 text-sm text-muted">Učitavanje…</p>;
+  if (!ready || (!user ? false : !venueId && !error)) return <ReservePageSkeleton />;
   if (!user) return <p className="mx-auto max-w-5xl px-4 py-8 text-sm text-muted">Prijava je potrebna.</p>;
 
   return (

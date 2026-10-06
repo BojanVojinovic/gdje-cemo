@@ -1,7 +1,8 @@
 "use client";
 
 import { ComboBox } from "@/components/combo-box";
-import { Button, EmptyState, Skeleton, inputClass, useToast } from "@/components/ui";
+import { UserTableSkeleton } from "@/components/skeletons";
+import { Button, EmptyState, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { PageMeta, User } from "@/types";
@@ -62,7 +63,7 @@ export default function AdminUsersPage() {
         <Button variant="secondary" onClick={() => bulk("disable")}>Onemogući označene</Button>
         <Button variant="secondary" onClick={() => bulk("enable")}>Uključi označene</Button>
       </div>
-      {loading ? <Skeleton className="h-40" /> : null}
+      {loading ? <UserTableSkeleton /> : null}
       {!loading && users.length === 0 ? <EmptyState title="Nema korisnika." body="Promijenite pretragu." /> : null}
       <div className="overflow-x-auto rounded-lg border border-line bg-paper">
         <table className="w-full min-w-[720px] text-left text-sm">

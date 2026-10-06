@@ -1,6 +1,8 @@
 "use client";
 
-import { Button, EmptyState, Field, Skeleton, inputClass, useToast } from "@/components/ui";
+import { EditReviewModal } from "@/components/review-section";
+import { ProfileFormSkeleton, ProfileReviewListSkeleton } from "@/components/skeletons";
+import { Button, EmptyState, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError, fieldError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
@@ -14,6 +16,8 @@ export default function ProfilePage() {
   const router = useRouter();
   const toast = useToast();
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [editing, setEditing] = useState<Review | null>(null);
   const [form, setForm] = useState({ first_name: "", last_name: "", username: "", email: "", phone: "" });
   const [password, setPassword] = useState({ current_password: "", password: "", password_confirmation: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -36,10 +40,32 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!token) return;
-    api<Review[]>("/me/reviews", { token }).then((response) => setReviews(response.data)).catch(() => undefined);
+    setReviewsLoading(true);
+    api<Review[]>("/me/reviews", { token })
+      .then((response) => setReviews(response.data))
+      .catch(() => undefined)
+      .finally(() => setReviewsLoading(false));
   }, [token]);
 
-  if (!ready || !user) return <div className="mx-auto max-w-3xl px-4 py-10"><Skeleton className="h-40" /></div>;
+  async function reloadReviews() {
+    if (!token) return;
+    setReviewsLoading(true);
+    try {
+      const response = await api<Review[]>("/me/reviews", { token });
+      setReviews(response.data);
+    } finally {
+      setReviewsLoading(false);
+    }
+  }
+
+  async function removeReview(review: Review) {
+    if (!token || !window.confirm("Obrisati recenziju?")) return;
+    await api(`/reviews/${review.id}`, { method: "DELETE", token });
+    toast("Recenzija je obrisana.");
+    await reloadReviews();
+  }
+
+  if (!ready || !user) return <ProfileFormSkeleton />;
 
   async function saveProfile(event: React.FormEvent) {
     event.preventDefault();
@@ -140,16 +166,23 @@ export default function ProfilePage() {
           <h2 className="font-serif text-2xl">Moje recenzije</h2>
           <Link href="/saved" className="text-sm text-sea">Sačuvana mjesta</Link>
         </div>
-        {reviews.length === 0 ? <EmptyState title="Još nema recenzija." body="Kad ostavite utisak o nekom mjestu, pojaviće se ovdje." /> : (
+        {reviewsLoading ? <ProfileReviewListSkeleton /> : null}
+        {!reviewsLoading && reviews.length === 0 ? <EmptyState title="Još nema recenzija." body="Kad ostavite utisak o nekom mjestu, pojaviće se ovdje." /> : null}
+        {!reviewsLoading && reviews.length > 0 ? (
           <ul className="space-y-3">
             {reviews.map((review) => (
               <li key={review.id} className="rounded-lg border border-line bg-paper p-4">
                 <Link href={`/venue/${review.venue?.slug}`} className="font-medium">{review.venue?.name}</Link>
                 <p className="mt-1 text-sm">{review.body}</p>
+                <div className="mt-3 flex gap-2">
+                  <Button variant="secondary" onClick={() => setEditing(review)}>Izmijeni</Button>
+                  <Button variant="ghost" onClick={() => void removeReview(review)}>Obriši</Button>
+                </div>
               </li>
             ))}
           </ul>
-        )}
+        ) : null}
+        <EditReviewModal review={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); void reloadReviews(); }} />
       </section>
     </div>
   );

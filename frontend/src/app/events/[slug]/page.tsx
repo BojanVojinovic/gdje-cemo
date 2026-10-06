@@ -1,6 +1,7 @@
 "use client";
 
 import { ReportButton } from "@/components/review-section";
+import { EventDetailSkeleton } from "@/components/skeletons";
 import { Button, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -12,25 +13,39 @@ import { useEffect, useState } from "react";
 type EventPayload = {
   event: VenueContentItem;
   registered: number;
+  is_registered: boolean;
   spots_remaining: number | null;
   related: VenueContentItem[];
 };
 
 export default function EventPage() {
   const params = useParams<{ slug: string }>();
-  const { token, user } = useAuth();
+  const { token, user, ready } = useAuth();
   const router = useRouter();
   const toast = useToast();
   const [payload, setPayload] = useState<EventPayload | null>(null);
   const [missing, setMissing] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    if (!ready) return;
+    let cancel = false;
     setMissing(false);
-    api<EventPayload>(`/events/${params.slug}`).then((response) => setPayload(response.data)).catch(() => setMissing(true));
-  }, [params.slug]);
+    setPayload(null);
+    api<EventPayload>(`/events/${params.slug}`, { token })
+      .then((response) => {
+        if (!cancel) setPayload(response.data);
+      })
+      .catch(() => {
+        if (!cancel) setMissing(true);
+      });
+    return () => {
+      cancel = true;
+    };
+  }, [params.slug, token, ready]);
 
   if (missing) return <p className="mx-auto max-w-3xl px-4 py-10 text-sm text-muted">Događaj nije javan ili ne postoji.</p>;
-  if (!payload) return <p className="mx-auto max-w-3xl px-4 py-10 text-sm text-muted">Učitavanje događaja…</p>;
+  if (!payload) return <EventDetailSkeleton />;
   const event = payload.event;
 
   async function register(cancel = false) {
@@ -38,13 +53,16 @@ export default function EventPage() {
       router.push("/login");
       return;
     }
+    setBusy(true);
     try {
       await api(`/content/${event.id}/register`, { method: cancel ? "DELETE" : "POST", token });
       toast(cancel ? "Prijava je otkazana." : "Prijava je sačuvana.");
-      const fresh = await api<EventPayload>(`/events/${params.slug}`);
+      const fresh = await api<EventPayload>(`/events/${params.slug}`, { token });
       setPayload(fresh.data);
     } catch (reason) {
       toast(reason instanceof ApiError ? (reason.errors?.event?.[0] || reason.message) : "Prijava nije sačuvana.");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -69,11 +87,10 @@ export default function EventPage() {
           <p className="font-semibold">{event.price ? `${event.price} €` : "Besplatno"}</p>
           {event.organizer ? <p className="text-sm text-muted">{event.organizer}</p> : null}
           {event.capacity ? <p className="text-sm">{payload.registered} prijavljenih · {payload.spots_remaining} slobodnih mjesta</p> : null}
-          {user && event.registration_mode !== "none" ? (
-            <div className="flex flex-col gap-2">
-              <Button onClick={() => void register(false)}>Prijavi se</Button>
-              <Button variant="secondary" onClick={() => void register(true)}>Otkaži prijavu</Button>
-            </div>
+          {user && event.registration_mode !== "none" && event.registration_mode !== "table_reservation" ? (
+            <Button onClick={() => void register(payload.is_registered)} loading={busy}>
+              {payload.is_registered ? "Odjavi se" : "Prijavi se"}
+            </Button>
           ) : null}
           {event.registration_mode === "none" ? <p className="text-sm text-muted">Prijava nije potrebna.</p> : null}
           {event.registration_mode === "table_reservation" && event.venue ? (

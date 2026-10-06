@@ -89,7 +89,7 @@ export default async function VenuePage({ params }: { params: Promise<{ slug: st
           <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
             <h1 className="font-serif text-4xl sm:text-6xl">{venue.name}</h1>
             <div className="flex flex-wrap gap-2">
-              <SaveButton venueId={venue.id} initialSaved={venue.is_saved} />
+              <SaveButton venueId={venue.id} slug={venue.slug} />
               <FollowButton venueId={venue.id} />
             </div>
           </div>

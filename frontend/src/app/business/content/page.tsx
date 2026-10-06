@@ -1,6 +1,7 @@
 "use client";
 
 import { ComboBox } from "@/components/combo-box";
+import { CalendarSkeleton, InfoListSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -17,6 +18,7 @@ export default function ContentPage() {
   const [items, setItems] = useState<VenueContentItem[]>([]);
   const [calendar, setCalendar] = useState<VenueContentItem[]>([]);
   const [filter, setFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [form, setForm] = useState({
     venue_id: "",
@@ -52,9 +54,14 @@ export default function ContentPage() {
     setVenues(owned.data);
     setCalendar(monthItems.data);
     setForm((current) => ({ ...current, venue_id: current.venue_id || String(owned.data[0]?.id ?? "") }));
+    setLoading(false);
   }
 
-  useEffect(() => { void load().catch(() => undefined); }, [token, filter, month]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!token) return;
+    setLoading(true);
+    void load().catch(() => setLoading(false));
+  }, [token, filter, month]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const days = useMemo(() => calendarDays(month), [month]);
 
@@ -99,6 +106,19 @@ export default function ContentPage() {
     if (action === "archive" || action === "cancel") await api(`/business/content/${id}`, { method: "PUT", token, body: { title: items.find((item) => item.id === id)?.title, type: items.find((item) => item.id === id)?.type, status: action === "archive" ? "archived" : "cancelled" } });
     toast("Sadržaj je ažuriran.");
     await load();
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-serif text-4xl">Sadržaj</h1>
+        <div className="flex gap-2">
+          {Array.from({ length: 5 }, (_, index) => <div key={index} className="h-11 w-24 animate-pulse rounded-full bg-line" />)}
+        </div>
+        <CalendarSkeleton />
+        <InfoListSkeleton />
+      </div>
+    );
   }
 
   return (

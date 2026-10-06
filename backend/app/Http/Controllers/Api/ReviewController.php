@@ -44,6 +44,7 @@ class ReviewController extends Controller
         $review = DB::transaction(function () use ($existing, $user, $venue, $request, $reviews) {
             if ($existing) {
                 $existing->restore();
+                $existing->response()->delete();
                 $existing->update([
                     'rating' => $request->integer('rating'),
                     'body' => $request->string('body')->value(),
@@ -83,6 +84,7 @@ class ReviewController extends Controller
     {
         $this->authorize('delete', $review);
         $venue = $review->venue;
+        $review->response()->delete();
         $review->delete();
         $reviews->recalculate($venue);
 

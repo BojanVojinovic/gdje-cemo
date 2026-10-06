@@ -115,6 +115,15 @@ export function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded-md bg-line/80 ${className}`} />;
 }
 
+export function SkeletonStack({ rows = 3, className = "h-24" }: { rows?: number; className?: string }) {
+  return (
+    <div className="space-y-3" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Učitavanje</span>
+      {Array.from({ length: rows }, (_, index) => <Skeleton key={index} className={className} />)}
+    </div>
+  );
+}
+
 export function Modal({
   open,
   title,

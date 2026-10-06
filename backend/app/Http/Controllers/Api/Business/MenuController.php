@@ -21,11 +21,15 @@ class MenuController extends Controller
     public function storeCategory(Request $request, Venue $venue): JsonResponse
     {
         $this->allow('manageVenue', $venue);
-        $data = $request->validate(['name' => ['required', 'string', 'max:120']]);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'station' => ['sometimes', 'in:kitchen,bar'],
+        ]);
 
         $menu = $venue->menus()->firstOrCreate(['name' => 'Meni'], ['is_active' => true]);
         $category = $menu->categories()->create([
             'name' => $data['name'],
+            'station' => $data['station'] ?? MenuCategory::stationForName($data['name']),
             'sort_order' => (int) $menu->categories()->max('sort_order') + 1,
         ]);
 
@@ -35,7 +39,10 @@ class MenuController extends Controller
     public function updateCategory(Request $request, MenuCategory $menuCategory): JsonResponse
     {
         $this->allow('manageCategory', $menuCategory);
-        $data = $request->validate(['name' => ['required', 'string', 'max:120']]);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'station' => ['sometimes', 'in:kitchen,bar'],
+        ]);
         $menuCategory->update($data);
 
         return ApiResponse::success(new MenuCategoryResource($menuCategory->load('items')), 'Kategorija je sačuvana.');

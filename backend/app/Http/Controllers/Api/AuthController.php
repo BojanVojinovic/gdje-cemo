@@ -61,7 +61,7 @@ class AuthController extends Controller
 
         return ApiResponse::success([
             'token' => $token,
-            'user' => new UserResource($user->load('role', 'businesses')),
+            'user' => new UserResource($user->load('role', 'businesses', 'staffAssignments.venue')),
         ]);
     }
 

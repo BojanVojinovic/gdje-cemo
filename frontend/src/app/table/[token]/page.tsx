@@ -1,13 +1,39 @@
 "use client";
 
+import { TableOrderSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatPrice } from "@/lib/format";
 import { orderStatusLabel, orderSteps } from "@/lib/hospitality";
 import type { Menu, MenuCategory } from "@/types";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+
+type GuestPass = { token: string; sessionId: number };
+
+function guestKey(qr: string) {
+  return `gdje-table-guest:${qr}`;
+}
+
+function readGuest(qr: string): GuestPass | null {
+  try {
+    const raw = window.sessionStorage.getItem(guestKey(qr));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as GuestPass;
+    return parsed.token && parsed.sessionId ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function explain(error: unknown, fallback: string) {
+  if (error instanceof ApiError) {
+    const detail = error.errors ? Object.values(error.errors).flat()[0] : undefined;
+    return detail || error.message || fallback;
+  }
+  return fallback;
+}
 
 type Scan = {
   table: { id: number; name: string; zone: string | null; is_orderable: boolean };
@@ -20,8 +46,7 @@ type PlacedOrder = { id: number; status: string; items: PlacedItem[] };
 
 export default function TableOrderPage() {
   const params = useParams<{ token: string }>();
-  const { token, user } = useAuth();
-  const router = useRouter();
+  const { token } = useAuth();
   const toast = useToast();
   const [scan, setScan] = useState<Scan | null>(null);
   const [missing, setMissing] = useState(false);
@@ -30,6 +55,7 @@ export default function TableOrderPage() {
   const [notes, setNotes] = useState("");
   const [placed, setPlaced] = useState<PlacedOrder[]>([]);
   const [sending, setSending] = useState(false);
+  const [calling, setCalling] = useState<"waiter" | "bill" | null>(null);
 
   useEffect(() => {
     api<Scan>(`/tables/qr/${params.token}`)
@@ -49,23 +75,40 @@ export default function TableOrderPage() {
   const total = lines.reduce((sum, item) => sum + Number(item.price) * (qty[item.id] ?? 0), 0);
 
   function changeQty(id: number, next: number) {
-    setQty((current) => ({ ...current, [id]: Math.max(0, Math.min(20, next)) }));
+    setQty((current) => ({ ...current, [id]: Math.max(0, Math.min(8, next)) }));
+  }
+
+  async function ensureGuest(): Promise<GuestPass> {
+    const saved = readGuest(params.token);
+    const response = await api<{ session_id: number; guest_token: string }>(`/tables/qr/${params.token}/session`, {
+      method: "POST",
+      token: token ?? undefined,
+      body: saved ? { guest_token: saved.token } : undefined,
+    });
+    const pass = { token: response.data.guest_token, sessionId: response.data.session_id };
+    window.sessionStorage.setItem(guestKey(params.token), JSON.stringify(pass));
+    return pass;
   }
 
   async function send() {
-    if (!user || !token || !scan) {
-      router.push("/login");
-      return;
-    }
+    if (!scan) return;
     const items = lines.map((item) => ({ menu_item_id: item.id, quantity: qty[item.id] }));
     if (!items.length) {
       toast("Izaberite bar jednu stavku.");
       return;
     }
+    if (count > 24) {
+      toast("Najviše 24 komada u jednoj narudžbini.");
+      return;
+    }
     setSending(true);
     try {
-      const session = await api<{ session_id: number }>(`/tables/qr/${params.token}/session`, { method: "POST", token });
-      const response = await api<{ id: number; status: string; items: { name_snapshot: string; quantity: number; price_snapshot: number }[] }>(`/sessions/${session.data.session_id}/orders`, { method: "POST", token, body: { notes, items } });
+      const pass = await ensureGuest();
+      const response = await api<{ id: number; status: string; items: { name_snapshot: string; quantity: number; price_snapshot: number }[] }>(`/sessions/${pass.sessionId}/orders`, {
+        method: "POST",
+        token: token ?? undefined,
+        body: { notes, items, guest_token: pass.token },
+      });
       setPlaced((current) => [
         {
           id: response.data.id,
@@ -78,14 +121,40 @@ export default function TableOrderPage() {
       setQty({});
       setNotes("");
     } catch (reason) {
-      toast(reason instanceof ApiError ? reason.message : "Narudžbina nije poslata.");
+      const message = explain(reason, "Narudžbina nije poslata.");
+      if (message.includes("zatvorena")) {
+        window.sessionStorage.removeItem(guestKey(params.token));
+      }
+      toast(message);
     } finally {
       setSending(false);
     }
   }
 
+  async function callStaff(type: "waiter" | "bill") {
+    if (!scan) return;
+    setCalling(type);
+    try {
+      const pass = await ensureGuest();
+      const response = await api(`/sessions/${pass.sessionId}/service`, {
+        method: "POST",
+        token: token ?? undefined,
+        body: { type, guest_token: pass.token },
+      });
+      toast(response.message || (type === "bill" ? "Zahtjev za račun je poslat." : "Konobar je obaviješten."));
+    } catch (reason) {
+      const message = explain(reason, "Poziv nije poslat.");
+      if (message.includes("zatvorena")) {
+        window.sessionStorage.removeItem(guestKey(params.token));
+      }
+      toast(message);
+    } finally {
+      setCalling(null);
+    }
+  }
+
   if (missing) return <p className="mx-auto max-w-3xl px-4 py-10">QR kod nije aktivan.</p>;
-  if (!scan) return <p className="mx-auto max-w-3xl px-4 py-10 text-sm text-muted">Učitavanje stola…</p>;
+  if (!scan) return <TableOrderSkeleton />;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 pb-36">
@@ -93,6 +162,10 @@ export default function TableOrderPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">{scan.venue.name}{scan.table.zone ? ` · ${scan.table.zone}` : ""}</p>
         <h1 className="font-serif text-4xl">Sto {scan.table.name}</h1>
         <p className="mt-1 text-sm text-muted">Meni · Korpa · Trenutna narudžbina</p>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <Button variant="secondary" onClick={() => void callStaff("waiter")} loading={calling === "waiter"} disabled={calling !== null || sending}>Pozovi konobara</Button>
+          <Button variant="secondary" onClick={() => void callStaff("bill")} loading={calling === "bill"} disabled={calling !== null || sending}>Plati račun</Button>
+        </div>
       </header>
       {!scan.table.is_orderable ? <p>Ovaj sto trenutno ne prima narudžbine.</p> : null}
       {placed.map((order) => (

@@ -1,6 +1,7 @@
 "use client";
 
 import { ComboBox } from "@/components/combo-box";
+import { EventFiltersSkeleton, EventGridSkeleton } from "@/components/skeletons";
 import { Field, inputClass } from "@/components/ui";
 import { api } from "@/lib/api";
 import { when, type VenueContentItem } from "@/lib/hospitality";
@@ -14,6 +15,8 @@ export default function EventsPage() {
   const [cities, setCities] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [venues, setVenues] = useState<{ slug: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filtersReady, setFiltersReady] = useState(false);
 
   useEffect(() => {
     api<string[]>("/cities").then((response) => setCities(response.data)).catch(() => undefined);
@@ -28,7 +31,7 @@ export default function EventsPage() {
         rows.push(...next.data);
       }
       setCategories([...new Set(rows.map((item) => item.event_category).filter((item): item is string => Boolean(item)))]);
-    }).catch(() => undefined);
+    }).catch(() => undefined).finally(() => setFiltersReady(true));
   }, []);
 
   useEffect(() => {
@@ -47,9 +50,12 @@ export default function EventsPage() {
       return query;
     }
     function load(coords?: { latitude: number; longitude: number }) {
+      setLoading(true);
       api<VenueContentItem[]>(`/events?${queryFor(coords).toString()}`).then((response) => {
         if (!cancel) setItems(response.data);
-      }).catch(() => undefined);
+      }).catch(() => undefined).finally(() => {
+        if (!cancel) setLoading(false);
+      });
     }
     if (filters.sort === "proximity" && typeof navigator !== "undefined" && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -65,7 +71,7 @@ export default function EventsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
       <h1 className="font-serif text-4xl">Događaji</h1>
-      <form className="grid gap-3 sm:grid-cols-3" onSubmit={(event) => event.preventDefault()}>
+      {filtersReady ? <form className="grid gap-3 sm:grid-cols-3" onSubmit={(event) => event.preventDefault()}>
         <Field label="Grad"><ComboBox value={filters.city} onChange={(value) => setFilters({ ...filters, city: value })} options={[{ value: "", label: "Svi" }, ...cities.map((city) => ({ value: city, label: city }))]} /></Field>
         <Field label="Kategorija"><ComboBox value={filters.category} onChange={(value) => setFilters({ ...filters, category: value })} options={[{ value: "", label: "Sve" }, ...categories.map((category) => ({ value: category, label: category }))]} /></Field>
         <Field label="Datum"><input type="date" className={inputClass} value={filters.date} onChange={(event) => setFilters({ ...filters, date: event.target.value })} /></Field>
@@ -84,8 +90,10 @@ export default function EventsPage() {
             { value: "proximity", label: "Blizina" },
           ]} />
         </Field>
-      </form>
-      {items.length === 0 ? <p className="text-sm text-muted">Nema objavljenih događaja za ove filtere.</p> : (
+      </form> : <EventFiltersSkeleton />}
+      {loading ? <EventGridSkeleton /> : null}
+      {!loading && items.length === 0 ? <p className="text-sm text-muted">Nema objavljenih događaja za ove filtere.</p> : null}
+      {!loading && items.length > 0 ? (
         <ul className="grid gap-5 sm:grid-cols-2">
           {items.map((item) => (
             <li key={item.id} className="overflow-hidden border border-line bg-paper shadow-[var(--shadow-card)]">
@@ -102,7 +110,7 @@ export default function EventsPage() {
             </li>
           ))}
         </ul>
-      )}
+      ) : null}
     </div>
   );
 }

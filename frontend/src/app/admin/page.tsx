@@ -1,6 +1,6 @@
 "use client";
 
-import { Skeleton } from "@/components/ui";
+import { StatGridSkeleton } from "@/components/skeletons";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useEffect, useState } from "react";
@@ -25,7 +25,14 @@ export default function AdminHome() {
     api<Stats>("/admin/stats", { token }).then((response) => setStats(response.data)).catch(() => undefined);
   }, [token]);
 
-  if (!stats) return <Skeleton className="h-40" />;
+  if (!stats) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-serif text-4xl">Platforma</h1>
+        <StatGridSkeleton count={8} />
+      </div>
+    );
+  }
 
   const cards = [
     ["Korisnici", stats.users],

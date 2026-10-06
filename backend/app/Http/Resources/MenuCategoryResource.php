@@ -12,6 +12,7 @@ class MenuCategoryResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'station' => $this->station ?? 'kitchen',
             'sort_order' => $this->sort_order,
             'items' => MenuItemResource::collection($this->whenLoaded('items')),
         ];

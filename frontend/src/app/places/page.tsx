@@ -2,7 +2,8 @@
 
 import { ComboBox, type ComboOption } from "@/components/combo-box";
 import { VenueGrid } from "@/components/venue-card";
-import { Button, EmptyState, Pagination, Skeleton, inputClass } from "@/components/ui";
+import { FilterPanelSkeleton, PlacesPageSkeleton, VenueGridSkeleton } from "@/components/skeletons";
+import { Button, EmptyState, Pagination, inputClass } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { Amenity, Category, PageMeta, Venue } from "@/types";
@@ -11,7 +12,7 @@ import { Suspense, useEffect, useState } from "react";
 
 export default function PlacesPage() {
   return (
-    <Suspense fallback={<div className="mx-auto max-w-6xl px-4 py-10"><Skeleton className="h-40" /></div>}>
+    <Suspense fallback={<PlacesPageSkeleton />}>
       <PlacesExplorer />
     </Suspense>
   );
@@ -29,13 +30,16 @@ function PlacesExplorer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [catalogsReady, setCatalogsReady] = useState(false);
 
   const query = params.toString();
 
   useEffect(() => {
-    api<Category[]>("/categories").then((response) => setCategories(response.data)).catch(() => undefined);
-    api<Amenity[]>("/amenities").then((response) => setAmenities(response.data)).catch(() => undefined);
-    api<string[]>("/cities").then((response) => setCities(response.data)).catch(() => undefined);
+    Promise.all([
+      api<Category[]>("/categories").then((response) => setCategories(response.data)),
+      api<Amenity[]>("/amenities").then((response) => setAmenities(response.data)),
+      api<string[]>("/cities").then((response) => setCities(response.data)),
+    ]).catch(() => undefined).finally(() => setCatalogsReady(true));
   }, []);
 
   useEffect(() => {
@@ -89,7 +93,7 @@ function PlacesExplorer() {
     };
   }, [filtersOpen]);
 
-  const filterBody = (
+  const filterBody = !catalogsReady ? <FilterPanelSkeleton /> : (
     <div className="space-y-4">
       <button type="button" className="min-h-9 rounded-full border border-line bg-paper px-3 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40" disabled={!filtersActive} onClick={() => { setFiltersOpen(false); router.push("/places"); }}>Poništi filtere</button>
       <FilterGroup label="Pretraga">
@@ -172,12 +176,7 @@ function PlacesExplorer() {
             ]} />
           </div>
         </div>
-        {loading ? (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Skeleton className="h-72" />
-            <Skeleton className="h-72" />
-          </div>
-        ) : null}
+        {loading ? <VenueGridSkeleton /> : null}
         {error ? <p className="rounded-lg bg-paper p-6 text-coral">{error}</p> : null}
         {!loading && !error && venues.length === 0 ? (
           <EmptyState title="Nema mjesta za ovu pretragu." body="Promijenite grad, kategoriju ili ocjenu." />

@@ -4,13 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Order extends Model
+class TableServiceRequest extends Model
 {
     protected $fillable = [
-        'dining_session_id', 'venue_id', 'user_id', 'status', 'notes', 'table_name_snapshot',
+        'dining_session_id', 'venue_id', 'venue_table_id', 'user_id',
+        'type', 'status', 'handled_by', 'handled_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'handled_at' => 'datetime',
+        ];
+    }
 
     public function session(): BelongsTo
     {
@@ -20,15 +27,5 @@ class Order extends Model
     public function venue(): BelongsTo
     {
         return $this->belongsTo(Venue::class);
-    }
-
-    public function items(): HasMany
-    {
-        return $this->hasMany(OrderItem::class);
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 }
