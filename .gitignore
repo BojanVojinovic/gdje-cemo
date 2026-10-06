@@ -1,6 +1,7 @@
 .DS_Store
 .railway
 .cursor
+.vscode
 .env
 .env.*
 !.env.example
