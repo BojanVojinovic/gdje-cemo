@@ -26,3 +26,6 @@ frontend/.next
 frontend/.vercel
 frontend/next-env.d.ts
 frontend/*.tsbuildinfo
+
+# Client handoff notes. They include demo passwords and stay off the public repo.
+docs/klijent/
