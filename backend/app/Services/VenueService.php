@@ -155,6 +155,8 @@ class VenueService
             'tiktok',
             'price_level',
             'timezone',
+            'offers_delivery',
+            'delivery_eta_minutes',
         ]);
     }
 }
