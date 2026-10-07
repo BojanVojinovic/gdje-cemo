@@ -2,8 +2,8 @@ FROM php:8.4-apache
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        git unzip libpng-dev libjpeg62-turbo-dev libfreetype6-dev libzip-dev libonig-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+        git unzip libpng-dev libjpeg62-turbo-dev libfreetype6-dev libwebp-dev libzip-dev libonig-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j"$(nproc)" pdo_mysql mbstring zip gd bcmath \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
