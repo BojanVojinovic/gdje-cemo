@@ -1,6 +1,7 @@
 "use client";
 
 import { useI18n } from "@/components/i18n-provider";
+import { PwaInstall } from "@/components/pwa-install";
 import { useAuth } from "@/lib/auth";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -72,6 +73,7 @@ export function SiteHeader() {
           </div>
         </div>
       </header>
+      <PwaInstall />
       {open ? (
         <div className="fixed inset-0 z-50 md:hidden">
           <button type="button" className="absolute inset-0 bg-black/60" aria-label={t("nav.close")} onClick={() => setOpen(false)} />

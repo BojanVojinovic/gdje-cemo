@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Source_Sans_3 } from "next/font/google";
 import { cookies } from "next/headers";
 import "./globals.css";
@@ -13,6 +13,19 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: { default: "Gdje ćemo", template: "%s · Gdje ćemo" },
   description: "Find restaurants, cafés, bars and clubs in Montenegro.",
+  applicationName: "Gdje ćemo",
+  appleWebApp: { capable: true, title: "Gdje ćemo", statusBarStyle: "black-translucent" },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#07090f",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

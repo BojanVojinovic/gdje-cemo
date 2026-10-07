@@ -232,6 +232,10 @@ const en: Record<string, string> = {
   "brand.uploaded": "Logo saved.",
   "brand.removed": "Logo removed.",
   "brand.failed": "That could not be saved.",
+  "pwa.install": "Install the app",
+  "pwa.title": "Add it to your phone",
+  "pwa.ios": "In Safari, tap Share, then Add to Home Screen.",
+  "pwa.manual": "Open the browser menu and choose Install app or Add to Home screen.",
 };
 
 const cnr: Record<string, string> = {
@@ -461,6 +465,10 @@ const cnr: Record<string, string> = {
   "brand.uploaded": "Logo je sačuvan.",
   "brand.removed": "Logo je uklonjen.",
   "brand.failed": "To nije sačuvano.",
+  "pwa.install": "Preuzmi aplikaciju",
+  "pwa.title": "Dodaj je na telefon",
+  "pwa.ios": "U Safariju otvori Dijeli, pa izaberi Dodaj na početni ekran.",
+  "pwa.manual": "Otvori meni pregledača i izaberi Instaliraj aplikaciju ili Dodaj na početni ekran.",
 };
 
 const dictionaries: Record<Locale, Record<string, string>> = { en, cnr };
