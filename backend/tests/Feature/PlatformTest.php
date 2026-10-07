@@ -291,6 +291,41 @@ class PlatformTest extends TestCase
         Storage::disk('public')->assertExists($ownVenue->fresh()->cover_path);
     }
 
+    public function test_owner_can_brand_the_public_profile(): void
+    {
+        Storage::fake('public');
+        $owner = $this->user('business');
+        $venue = $this->makeVenue('Brendirano', 'Kotor', 2, 0, $owner);
+        $token = $owner->createToken('api')->plainTextToken;
+
+        $this->withToken($token)->putJson('/api/business/venues/'.$venue->id, [
+            'tagline' => 'Riba i vino uz more',
+            'brand_color' => '#F4D35E',
+        ])->assertOk()
+            ->assertJsonPath('data.tagline', 'Riba i vino uz more')
+            ->assertJsonPath('data.brand_color', '#f4d35e')
+            ->assertJsonPath('data.brand_ink', '#07090f');
+
+        $this->withToken($token)->putJson('/api/business/venues/'.$venue->id, [
+            'brand_color' => 'gold',
+        ])->assertUnprocessable();
+
+        $this->withToken($token)->post('/api/business/venues/'.$venue->id.'/logo', [
+            'image' => UploadedFile::fake()->image('logo.png', 200, 200),
+        ])->assertOk();
+
+        $this->assertNotNull($venue->fresh()->logo_path);
+        Storage::disk('public')->assertExists($venue->fresh()->logo_path);
+
+        $this->getJson('/api/venues/'.$venue->slug)
+            ->assertOk()
+            ->assertJsonPath('data.venue.tagline', 'Riba i vino uz more')
+            ->assertJsonPath('data.venue.brand_color', '#f4d35e');
+
+        $this->withToken($token)->deleteJson('/api/business/venues/'.$venue->id.'/logo')->assertOk();
+        $this->assertNull($venue->fresh()->logo_path);
+    }
+
     public function test_overnight_hours_are_open_after_midnight(): void
     {
         $venue = $this->makeVenue('Noćni klub', 'Budva', 3, 0);

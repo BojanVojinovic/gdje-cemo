@@ -16,6 +16,7 @@ export function VenueCard({ venue, featured = false }: { venue: Venue; featured?
           <div className="absolute left-3 top-3">
             <Badge tone={venue.is_open ? "open" : "closed"}>{venue.is_open ? "Otvoreno" : "Zatvoreno"}</Badge>
           </div>
+          {venue.logo_url ? <img src={venue.logo_url} alt="" className="absolute bottom-3 left-3 h-11 w-11 rounded-xl border border-line bg-paper object-contain p-0.5" /> : null}
           <div className="absolute bottom-3 right-3 bg-paper px-2 py-1 text-sm font-semibold text-ink">
             {venue.rating_avg.toFixed(1)}
             <span className="ml-1 text-xs font-normal text-muted">({venue.reviews_count})</span>

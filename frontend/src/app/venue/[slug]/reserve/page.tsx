@@ -5,6 +5,7 @@ import { FloorCanvas, TableLegend } from "@/components/floor-canvas";
 import { ReservePageSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
+import { brandButtonStyle } from "@/lib/brand";
 import { useAuth } from "@/lib/auth";
 import { seatsLabel, type FloorPlanPayload, type FloorTable } from "@/lib/hospitality";
 import type { VenueDetail } from "@/types";
@@ -26,6 +27,7 @@ export default function ReservePage() {
   const router = useRouter();
   const toast = useToast();
   const [venueId, setVenueId] = useState<number | null>(null);
+  const [brand, setBrand] = useState<{ color?: string | null; ink?: string | null }>({});
   const [name, setName] = useState("");
   const [plan, setPlan] = useState<FloorPlanPayload | null>(null);
   useEffect(() => {
@@ -47,6 +49,7 @@ export default function ReservePage() {
       .then(async (response) => {
         setVenueId(response.data.venue.id);
         setName(response.data.venue.name);
+        setBrand({ color: response.data.venue.brand_color, ink: response.data.venue.brand_ink });
         const floor = await api<FloorPlanPayload>(`/venues/${response.data.venue.id}/floor-plan`);
         setPlan(floor.data);
       })
@@ -137,7 +140,7 @@ export default function ReservePage() {
         <Field label="Zona">
           <ComboBox value={zoneId} onChange={setZoneId} options={[{ value: "", label: "Sve zone" }, ...(plan?.zones.map((zone) => ({ value: String(zone.id), label: zone.name })) ?? [])]} />
         </Field>
-        <Button type="submit" className="sm:col-span-4 sm:w-fit">Prikaži slobodne stolove</Button>
+        <Button type="submit" className="sm:col-span-4 sm:w-fit" style={brandButtonStyle(brand.color, brand.ink)}>Prikaži slobodne stolove</Button>
       </form>
       {error ? <p className="text-sm text-coral">{error}</p> : null}
       {availability ? (
@@ -191,7 +194,7 @@ export default function ReservePage() {
                 </div>
               ) : null}
               <Field label="Napomena"><textarea className={inputClass + " min-h-20 py-2"} value={notes} onChange={(event) => setNotes(event.target.value)} /></Field>
-              <Button onClick={() => void confirm()} disabled={availability.allow_table_selection && !selected && !combination}>Potvrdi rezervaciju</Button>
+              <Button onClick={() => void confirm()} disabled={availability.allow_table_selection && !selected && !combination} style={brandButtonStyle(brand.color, brand.ink)}>Potvrdi rezervaciju</Button>
             </>
           )}
         </section>

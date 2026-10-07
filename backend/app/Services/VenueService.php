@@ -157,6 +157,8 @@ class VenueService
             'timezone',
             'offers_delivery',
             'delivery_eta_minutes',
+            'tagline',
+            'brand_color',
         ]);
     }
 }

@@ -14,6 +14,19 @@ class UpdateVenueRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        foreach (['tagline', 'brand_color'] as $field) {
+            if ($this->exists($field) && $this->input($field) === '') {
+                $this->merge([$field => null]);
+            }
+        }
+
+        if ($this->filled('brand_color')) {
+            $this->merge(['brand_color' => strtolower((string) $this->input('brand_color'))]);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -42,6 +55,8 @@ class UpdateVenueRequest extends FormRequest
             'is_featured' => ['sometimes', 'boolean'],
             'offers_delivery' => ['sometimes', 'boolean'],
             'delivery_eta_minutes' => ['required_if:offers_delivery,true,1', 'nullable', 'integer', 'min:5', 'max:180'],
+            'tagline' => ['sometimes', 'nullable', 'string', 'max:160'],
+            'brand_color' => ['sometimes', 'nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'featured_until' => ['nullable', 'date'],
         ];
     }

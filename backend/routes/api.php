@@ -124,6 +124,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::delete('venues/{venue}', [BusinessVenueController::class, 'destroy']);
         Route::post('venues/{venue}/images', [BusinessVenueController::class, 'uploadImages']);
         Route::post('venues/{venue}/cover', [BusinessVenueController::class, 'updateCover']);
+        Route::post('venues/{venue}/logo', [BusinessVenueController::class, 'updateLogo']);
+        Route::delete('venues/{venue}/logo', [BusinessVenueController::class, 'destroyLogo']);
         Route::delete('venues/{venue}/images/{image}', [BusinessVenueController::class, 'destroyImage']);
         Route::put('venues/{venue}/images/reorder', [BusinessVenueController::class, 'reorderImages']);
         Route::get('venues/{venue}/reviews', [BusinessVenueController::class, 'reviews']);

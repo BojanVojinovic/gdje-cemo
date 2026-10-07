@@ -4,6 +4,7 @@ import { useI18n } from "@/components/i18n-provider";
 import { InfoListSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
+import { brandButtonStyle } from "@/lib/brand";
 import { useAuth } from "@/lib/auth";
 import type { VenueDetail } from "@/types";
 import Link from "next/link";
@@ -97,7 +98,7 @@ export default function DeliverPage() {
         <Field label={t("delivery.city")}><input className={inputClass} required value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} /></Field>
         <Field label={t("delivery.phone")}><input className={inputClass} required value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /></Field>
         <Field label={t("delivery.notes")}><textarea className={`${inputClass} min-h-24 py-3`} value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} /></Field>
-        <Button type="submit" loading={sending} disabled={!user}>{t("delivery.submit")}</Button>
+        <Button type="submit" loading={sending} disabled={!user} style={brandButtonStyle(venue.brand_color, venue.brand_ink)}>{t("delivery.submit")}</Button>
       </form>
     </div>
   );

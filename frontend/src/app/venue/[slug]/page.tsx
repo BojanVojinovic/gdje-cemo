@@ -7,6 +7,7 @@ import { FollowButton } from "@/components/follow-button";
 import { VenueHospitality } from "@/components/venue-hospitality";
 import { Gallery } from "@/components/gallery";
 import { api } from "@/lib/api";
+import { brandButtonStyle } from "@/lib/brand";
 import { formatPrice } from "@/lib/format";
 import { normalizeLocale, translate } from "@/lib/i18n";
 import type { VenueDetail } from "@/types";
@@ -89,9 +90,15 @@ export default async function VenuePage({ params }: { params: Promise<{ slug: st
       </div>
       <div className="mx-auto max-w-6xl px-4">
         <div className="relative -mt-16 border border-line bg-paper p-5 shadow-[var(--shadow-card)] sm:-mt-20 sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">{venue.category?.name}{venue.subcategory ? ` · ${venue.subcategory.name}` : ""} · {venue.city}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted" style={venue.brand_color ? { color: venue.brand_color } : undefined}>{venue.category?.name}{venue.subcategory ? ` · ${venue.subcategory.name}` : ""} · {venue.city}</p>
           <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
-            <h1 className="font-serif text-4xl sm:text-6xl">{venue.name}</h1>
+            <div className="flex items-end gap-4">
+              {venue.logo_url ? <img src={venue.logo_url} alt="" className="h-16 w-16 shrink-0 rounded-2xl border border-line bg-void object-contain p-1 sm:h-20 sm:w-20" /> : null}
+              <div>
+                <h1 className="font-serif text-4xl sm:text-6xl">{venue.name}</h1>
+                {venue.tagline ? <p className="mt-2 max-w-xl text-lg text-muted">{venue.tagline}</p> : null}
+              </div>
+            </div>
             <div className="flex flex-wrap gap-2">
               <SaveButton venueId={venue.id} slug={venue.slug} />
               <FollowButton venueId={venue.id} />
@@ -106,14 +113,14 @@ export default async function VenuePage({ params }: { params: Promise<{ slug: st
             {venue.verification_status === "verified" ? <Badge tone="verified">{t("venue.verified")}</Badge> : null}
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
-            <ReserveLink slug={venue.slug} className="inline-flex min-h-11 items-center rounded-full bg-sea px-5 text-sm font-semibold text-snow">{t("venue.reserve")}</ReserveLink>
+            <ReserveLink slug={venue.slug} style={brandButtonStyle(venue.brand_color, venue.brand_ink)} className="inline-flex min-h-11 items-center rounded-full bg-sea px-5 text-sm font-semibold text-snow">{t("venue.reserve")}</ReserveLink>
             {venue.offers_delivery ? <Link href={`/venue/${venue.slug}/deliver`} className="inline-flex min-h-11 items-center rounded-full border border-line px-5 text-sm font-semibold">{t("venue.orderDelivery")}</Link> : null}
             <a href="#meni" className="inline-flex min-h-11 items-center rounded-full border border-line px-5 text-sm font-semibold">{t("venue.menu")}</a>
           </div>
         </div>
       </div>
       <div className="fixed inset-x-0 bottom-14 z-20 flex gap-2 border-t border-line bg-paper p-3 md:hidden">
-        <ReserveLink slug={venue.slug} className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full bg-sea text-sm font-semibold text-snow">{t("venue.reserveShort")}</ReserveLink>
+        <ReserveLink slug={venue.slug} style={brandButtonStyle(venue.brand_color, venue.brand_ink)} className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full bg-sea text-sm font-semibold text-snow">{t("venue.reserveShort")}</ReserveLink>
         {venue.offers_delivery ? <Link href={`/venue/${venue.slug}/deliver`} className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-line text-sm font-semibold">{t("venue.orderDelivery")}</Link> : null}
         <a href="#meni" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-line text-sm font-semibold">{t("venue.menu")}</a>
       </div>

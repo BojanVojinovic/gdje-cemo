@@ -128,6 +128,29 @@ class VenueController extends Controller
         return ApiResponse::success(new VenueResource($venue->load(['category', 'subcategory', 'openingHours'])), 'Naslovna fotografija je sačuvana.');
     }
 
+    public function updateLogo(Request $request, Venue $venue, ImageService $images): JsonResponse
+    {
+        $this->authorize('update', $venue);
+        $request->validate([
+            'image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
+
+        $meta = $images->store($request->file('image'), 'venues/'.$venue->id.'/logo', 512, 160, 64, 64);
+        $images->delete($venue->logo_path, $meta['thumb_path']);
+        $venue->update(['logo_path' => $meta['path']]);
+
+        return ApiResponse::success(new VenueResource($venue->load(['category', 'subcategory', 'openingHours'])), 'Logo je sačuvan.');
+    }
+
+    public function destroyLogo(Venue $venue, ImageService $images): JsonResponse
+    {
+        $this->authorize('update', $venue);
+        $images->delete($venue->logo_path);
+        $venue->update(['logo_path' => null]);
+
+        return ApiResponse::success(new VenueResource($venue->load(['category', 'subcategory', 'openingHours'])), 'Logo je uklonjen.');
+    }
+
     public function destroyImage(Request $request, Venue $venue, VenueImage $image, ImageService $images): JsonResponse
     {
         $this->authorize('update', $venue);

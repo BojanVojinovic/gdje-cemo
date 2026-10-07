@@ -1,6 +1,7 @@
 "use client";
 
 import { useI18n } from "@/components/i18n-provider";
+import { BrandPanel } from "@/components/brand-panel";
 import { VenueForm } from "@/components/venue-form";
 import { FieldSkeleton, StatGridSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
@@ -18,8 +19,9 @@ export default function ManageVenuePage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { token } = useAuth();
+  const { t } = useI18n();
   const [detail, setDetail] = useState<Detail | null>(null);
-  const [tab, setTab] = useState<"info" | "photos" | "hours" | "menu" | "reviews" | "staff">("info");
+  const [tab, setTab] = useState<"info" | "photos" | "hours" | "menu" | "reviews" | "staff" | "look">("info");
   const [reviews, setReviews] = useState<Review[]>([]);
 
   async function load() {
@@ -58,13 +60,14 @@ export default function ManageVenuePage() {
         </div>
       </div>
       <div className="flex gap-2 overflow-x-auto">
-        {(["info", "photos", "hours", "menu", "staff", "reviews"] as const).map((item) => (
+        {(["info", "look", "photos", "hours", "menu", "staff", "reviews"] as const).map((item) => (
           <button key={item} type="button" onClick={() => setTab(item)} className={`min-h-11 rounded-full px-4 text-sm ${tab === item ? "bg-sea text-snow" : "bg-paper"}`}>
-            {{ info: "Podaci", photos: "Fotografije", hours: "Radno vrijeme", menu: "Meni", staff: "Osoblje", reviews: "Recenzije" }[item]}
+            {{ info: "Podaci", look: t("brand.tab"), photos: "Fotografije", hours: "Radno vrijeme", menu: "Meni", staff: "Osoblje", reviews: "Recenzije" }[item]}
           </button>
         ))}
       </div>
       {tab === "info" ? <VenueForm venue={venue} /> : null}
+      {tab === "look" ? <BrandPanel venue={venue} onChange={load} /> : null}
       {tab === "photos" ? <Photos venue={venue} onChange={load} /> : null}
       {tab === "hours" ? <Hours venue={venue} onChange={load} /> : null}
       {tab === "menu" ? <MenuEditor venue={venue} onChange={load} /> : null}

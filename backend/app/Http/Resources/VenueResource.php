@@ -9,6 +9,20 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class VenueResource extends JsonResource
 {
+    public static function ink(?string $hex): ?string
+    {
+        if ($hex === null || ! preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)) {
+            return null;
+        }
+
+        $red = hexdec(substr($hex, 1, 2));
+        $green = hexdec(substr($hex, 3, 2));
+        $blue = hexdec(substr($hex, 5, 2));
+        $luma = (0.299 * $red + 0.587 * $green + 0.114 * $blue) / 255;
+
+        return $luma > 0.62 ? '#07090f' : '#f7f9ff';
+    }
+
     public function toArray(Request $request): array
     {
         $hours = app(OpeningHoursService::class);
@@ -38,6 +52,10 @@ class VenueResource extends JsonResource
             'price_label' => str_repeat('€', (int) $this->price_level),
             'cover_url' => ImageService::url($this->cover_path),
             'thumb_url' => ImageService::url($this->cover_thumb_path ?: $this->cover_path),
+            'logo_url' => ImageService::url($this->logo_path),
+            'tagline' => $this->tagline,
+            'brand_color' => $this->brand_color,
+            'brand_ink' => self::ink($this->brand_color),
             'rating_avg' => round((float) $this->rating_avg, 2),
             'reviews_count' => $this->reviews_count,
             'status' => $this->status?->value ?? $this->status,

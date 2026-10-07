@@ -81,6 +81,10 @@ export type Venue = {
   price_label: string;
   cover_url: string | null;
   thumb_url: string | null;
+  logo_url?: string | null;
+  tagline?: string | null;
+  brand_color?: string | null;
+  brand_ink?: string | null;
   rating_avg: number;
   reviews_count: number;
   status: string;
