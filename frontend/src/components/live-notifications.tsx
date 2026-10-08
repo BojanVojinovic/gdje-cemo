@@ -2,72 +2,49 @@
 
 import { useToast } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
+import Pusher from "pusher-js";
 import { useEffect, useRef } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+const PUSHER_KEY = process.env.NEXT_PUBLIC_PUSHER_KEY ?? "";
+const PUSHER_CLUSTER = process.env.NEXT_PUBLIC_PUSHER_CLUSTER ?? "eu";
 
-type Notice = { id: number; title: string; body: string };
+type Notice = { id: number; title: string };
 
 export function LiveNotifications() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const toast = useToast();
   const toastRef = useRef(toast);
   toastRef.current = toast;
-  const after = useRef(0);
   const seen = useRef(new Set<number>());
 
   useEffect(() => {
-    if (!token) return;
-    const controller = new AbortController();
-    let stopped = false;
+    if (!token || !user || !PUSHER_KEY) return;
 
-    async function listen() {
-      while (!stopped) {
-        try {
-          const response = await fetch(`${API_URL}/me/notifications/stream?after=${after.current}`, {
-            headers: { Authorization: `Bearer ${token}`, Accept: "text/event-stream" },
-            signal: controller.signal,
-          });
-          if (!response.ok || !response.body) {
-            await wait(4000);
-            continue;
-          }
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = "";
-          while (!stopped) {
-            const chunk = await reader.read();
-            if (chunk.done) break;
-            buffer += decoder.decode(chunk.value, { stream: true });
-            const parts = buffer.split("\n\n");
-            buffer = parts.pop() ?? "";
-            for (const part of parts) {
-              const line = part.split("\n").find((row) => row.startsWith("data: "));
-              if (!line) continue;
-              const item = JSON.parse(line.slice(6)) as Notice;
-              if (!item?.id || seen.current.has(item.id)) continue;
-              seen.current.add(item.id);
-              after.current = Math.max(after.current, item.id);
-              toastRef.current(item.title);
-            }
-          }
-        } catch {
-          if (stopped) return;
-          await wait(4000);
-        }
-      }
-    }
+    const pusher = new Pusher(PUSHER_KEY, {
+      cluster: PUSHER_CLUSTER,
+      forceTLS: true,
+      authEndpoint: `${API_URL}/broadcasting/auth`,
+      auth: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      },
+    });
+    const channel = pusher.subscribe(`private-user.${user.id}`);
+    channel.bind("notification", (item: Notice) => {
+      if (!item?.id || seen.current.has(item.id)) return;
+      seen.current.add(item.id);
+      toastRef.current(item.title);
+    });
 
-    void listen();
     return () => {
-      stopped = true;
-      controller.abort();
+      channel.unbind_all();
+      pusher.unsubscribe(`private-user.${user.id}`);
+      pusher.disconnect();
     };
-  }, [token]);
+  }, [token, user?.id]);
 
   return null;
-}
-
-function wait(ms: number) {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\NotificationPushed;
 use App\Models\NotificationPreference;
 use App\Models\User;
 use App\Models\UserNotification;
@@ -19,13 +20,19 @@ class NotificationService
             return;
         }
 
-        UserNotification::query()->create([
+        $notification = UserNotification::query()->create([
             'user_id' => $user->id,
             'type' => $type,
             'title' => $title,
             'body' => $body,
             'data' => $data ?: null,
         ]);
+
+        try {
+            event(new NotificationPushed($notification));
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
     }
 
     public function notifyFollowers(Venue $venue, string $type, string $title, string $body, array $data = []): void

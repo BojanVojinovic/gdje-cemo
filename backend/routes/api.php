@@ -74,7 +74,6 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('me/notification-preferences', [FollowController::class, 'preferences']);
     Route::put('me/notification-preferences', [FollowController::class, 'updatePreferences']);
     Route::get('me/notifications', [FollowController::class, 'notifications']);
-    Route::get('me/notifications/stream', [FollowController::class, 'stream']);
     Route::post('me/notifications/{notification}/read', [FollowController::class, 'read']);
     Route::get('me/shifts', [ShiftController::class, 'mine']);
     Route::post('me/shifts/{staffShift}/swaps', [ShiftController::class, 'requestSwap']);
