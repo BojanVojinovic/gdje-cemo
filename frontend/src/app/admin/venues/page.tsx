@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { TableListSkeleton } from "@/components/skeletons";
 import { Button, EmptyState, inputClass, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -10,6 +11,7 @@ import { useEffect, useState } from "react";
 
 export default function AdminVenuesPage() {
   const { token } = useAuth();
+  const { t } = useI18n();
   const toast = useToast();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [meta, setMeta] = useState<PageMeta | null>(null);
@@ -50,8 +52,8 @@ export default function AdminVenuesPage() {
     <div className="space-y-4">
       <h1 className="font-serif text-4xl">Mjesta</h1>
       <form className="flex gap-2" onSubmit={(event) => { event.preventDefault(); void load(); }}>
-        <input className={inputClass} value={q} onChange={(event) => setQ(event.target.value)} placeholder="Naziv ili grad" />
-        <Button type="submit" variant="secondary">Traži</Button>
+        <input className={inputClass} value={q} onChange={(event) => setQ(event.target.value)} placeholder={t("field.searchVenues")} />
+        <Button type="submit" variant="secondary">{t("action.search")}</Button>
       </form>
       <div className="flex flex-wrap gap-2">
         <Button variant="secondary" onClick={() => bulk("publish")}>Objavi</Button>

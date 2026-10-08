@@ -1,6 +1,7 @@
 "use client";
 
 import { ComboBox } from "@/components/combo-box";
+import { useI18n } from "@/components/i18n-provider";
 import { FloorCanvas } from "@/components/floor-canvas";
 import { InfoListSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
@@ -27,6 +28,7 @@ type ReservationRow = {
 
 export default function ReservationsPage() {
   const { token } = useAuth();
+  const { t } = useI18n();
   const toast = useToast();
   const [rows, setRows] = useState<ReservationRow[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -108,7 +110,7 @@ export default function ReservationsPage() {
               {row.status === "confirmed" ? <Button onClick={() => void setStatus(row.id, "seated")}>Smjesti</Button> : null}
               {row.status === "confirmed" || row.status === "seated" ? <Button variant="secondary" onClick={() => void setStatus(row.id, "no_show")}>Nije došao</Button> : null}
               {row.status === "seated" ? <Button variant="secondary" onClick={() => void setStatus(row.id, "completed")}>Zatvori</Button> : null}
-              {row.status === "pending" || row.status === "confirmed" ? <Button variant="ghost" onClick={() => void setStatus(row.id, "cancelled")}>Otkaži</Button> : null}
+              {row.status === "pending" || row.status === "confirmed" ? <Button variant="ghost" onClick={() => void setStatus(row.id, "cancelled")}>{t("action.cancel")}</Button> : null}
             </div>
           </li>
         ))}

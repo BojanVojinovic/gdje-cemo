@@ -63,6 +63,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::get('me', [ProfileController::class, 'show']);
     Route::put('me', [ProfileController::class, 'update']);
+    Route::put('me/locale', [ProfileController::class, 'updateLocale']);
     Route::put('me/password', [ProfileController::class, 'updatePassword']);
     Route::post('me/avatar', [ProfileController::class, 'updateAvatar']);
     Route::delete('me/avatar', [ProfileController::class, 'deleteAvatar']);

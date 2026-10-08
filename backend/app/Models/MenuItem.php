@@ -15,6 +15,7 @@ class MenuItem extends Model
         'image_path',
         'is_available',
         'sort_order',
+        'translations',
     ];
 
     protected function casts(): array
@@ -22,6 +23,7 @@ class MenuItem extends Model
         return [
             'price' => 'float',
             'is_available' => 'boolean',
+            'translations' => 'array',
         ];
     }
 

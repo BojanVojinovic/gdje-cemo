@@ -14,7 +14,13 @@ class Category extends Model
         'slug',
         'icon',
         'sort_order',
+        'translations',
     ];
+
+    protected function casts(): array
+    {
+        return ['translations' => 'array'];
+    }
 
     public function parent(): BelongsTo
     {

@@ -9,6 +9,7 @@ use App\Models\Business;
 use App\Models\Category;
 use App\Models\User;
 use App\Models\Venue;
+use App\Support\ContentLocales;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -21,6 +22,8 @@ class VenueService
     {
         $business = $this->authorizedBusiness($user, (int) $data['business_id']);
         $this->assertCategory($data);
+
+        $data = $this->withTranslations($data);
 
         return DB::transaction(function () use ($user, $data, $business) {
             $venue = Venue::query()->create([
@@ -52,6 +55,8 @@ class VenueService
                 'subcategory_id' => $data['subcategory_id'] ?? $venue->subcategory_id,
             ]);
         }
+
+        $data = $this->withTranslations($data, $venue->translations);
 
         return DB::transaction(function () use ($user, $venue, $data) {
             $attributes = $this->attributes($user, $data);
@@ -159,6 +164,19 @@ class VenueService
             'delivery_eta_minutes',
             'tagline',
             'brand_color',
+            'translations',
         ]);
+    }
+
+    private function withTranslations(array $data, ?array $existing = null): array
+    {
+        if (! array_key_exists('translations', $data)) {
+            return $data;
+        }
+
+        $merged = ContentLocales::merge($existing, $data['translations'], ['description', 'tagline']);
+        $data['translations'] = $merged === [] ? null : $merged;
+
+        return $data;
     }
 }

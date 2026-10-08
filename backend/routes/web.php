@@ -6,7 +6,7 @@ Route::get('/', function () {
     return response()->json([
         'success' => true,
         'data' => [
-            'name' => 'Gdje ćemo API',
+            'name' => 'Shall We API',
             'version' => '1.0.0',
         ],
         'message' => null,

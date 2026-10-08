@@ -14,8 +14,10 @@ use App\Models\Setting;
 use App\Models\Venue;
 use App\Services\VenueQueryService;
 use App\Support\ApiResponse;
+use App\Support\ContentLocales;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class CatalogController extends Controller
 {
@@ -52,26 +54,40 @@ class CatalogController extends Controller
 
     public function home(Request $request, VenueQueryService $venues): JsonResponse
     {
-        $sections = $venues->discovery($request);
+        $locale = ContentLocales::fromRequest($request);
+        $city = trim((string) $request->query('city', ''));
+        $payload = function () use ($request, $venues) {
+            $sections = $venues->discovery($request);
 
-        return ApiResponse::success([
-            'featured' => VenueResource::collection($sections['featured']),
-            'popular' => VenueResource::collection($sections['popular']),
-            'recent' => VenueResource::collection($sections['recent']),
-            'top_rated' => VenueResource::collection($sections['topRated']),
-            'nearby' => VenueResource::collection($sections['nearby']),
-            'categories' => CategoryResource::collection(
-                Category::query()->whereNull('parent_id')->with('children')->orderBy('sort_order')->get()
-            ),
-            'promotions' => PromotionResource::collection(
-                Promotion::query()->where('is_active', true)->orderBy('sort_order')->get()
-            ),
-            'settings' => [
-                'site_name' => Setting::getValue('site_name', 'Gdje ćemo'),
-                'tagline' => Setting::getValue('tagline', 'Otkrijte restorane, kafiće i barove u Crnoj Gori.'),
-                'default_city' => Setting::getValue('default_city', 'Podgorica'),
-                'support_email' => Setting::getValue('support_email', 'podrska@gdjecemo.me'),
-            ],
-        ]);
+            return [
+                'featured' => VenueResource::collection($sections['featured'])->resolve(),
+                'popular' => VenueResource::collection($sections['popular'])->resolve(),
+                'recent' => VenueResource::collection($sections['recent'])->resolve(),
+                'top_rated' => VenueResource::collection($sections['topRated'])->resolve(),
+                'nearby' => VenueResource::collection($sections['nearby'])->resolve(),
+                'categories' => CategoryResource::collection(
+                    Category::query()->whereNull('parent_id')->with('children')->orderBy('sort_order')->get()
+                )->resolve(),
+                'promotions' => PromotionResource::collection(
+                    Promotion::query()->where('is_active', true)->orderBy('sort_order')->get()
+                )->resolve(),
+                'settings' => Setting::many([
+                    'site_name' => 'Shall We',
+                    'tagline' => 'Otkrijte restorane, kafiće i barove u Crnoj Gori.',
+                    'default_city' => 'Podgorica',
+                    'support_email' => 'podrska@gdjecemo.me',
+                ]),
+            ];
+        };
+
+        if ($request->user('sanctum') !== null) {
+            return ApiResponse::success($payload());
+        }
+
+        return ApiResponse::success(Cache::remember(
+            'catalog.home.'.$locale.'.'.md5($city),
+            now()->addSeconds(20),
+            $payload,
+        ));
     }
 }

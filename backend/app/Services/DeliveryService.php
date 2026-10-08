@@ -217,6 +217,6 @@ class DeliveryService
 
     private function locale(User $user): string
     {
-        return $user->locale === 'cnr' ? 'cnr' : 'en';
+        return \App\Support\ContentLocales::normalize($user->locale);
     }
 }

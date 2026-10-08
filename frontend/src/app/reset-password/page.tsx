@@ -1,6 +1,7 @@
 "use client";
 
 import { AuthCard } from "@/app/login/page";
+import { useI18n } from "@/components/i18n-provider";
 import { Button, Field, inputClass } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -15,6 +16,7 @@ export default function ResetPasswordPage() {
 }
 
 function ResetForm() {
+  const { t } = useI18n();
   const params = useSearchParams();
   const router = useRouter();
   const [password, setPassword] = useState("");
@@ -54,7 +56,7 @@ function ResetForm() {
         <Field label="Nova lozinka"><input className={inputClass} type="password" value={password} onChange={(event) => setPassword(event.target.value)} required /></Field>
         <Field label="Potvrda"><input className={inputClass} type="password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} required /></Field>
         {message ? <p className="text-sm">{message}</p> : null}
-        <Button type="submit" loading={loading}>Sačuvaj lozinku</Button>
+        <Button type="submit" loading={loading}>{t("action.save")}</Button>
       </form>
     </AuthCard>
   );

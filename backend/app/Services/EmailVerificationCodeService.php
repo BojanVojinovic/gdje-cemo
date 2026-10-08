@@ -49,11 +49,11 @@ class EmailVerificationCodeService
 
     private function locale(User $user): string
     {
-        return $user->locale === 'cnr' ? 'cnr' : 'en';
+        return \App\Support\ContentLocales::normalize($user->locale);
     }
 
     private function requestLocale(): string
     {
-        return str_starts_with((string) request()->header('Accept-Language'), 'cnr') ? 'cnr' : 'en';
+        return \App\Support\ContentLocales::fromRequest();
     }
 }

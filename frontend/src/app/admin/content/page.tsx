@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { InfoListSkeleton } from "@/components/skeletons";
 import { Button, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -9,6 +10,7 @@ import { useEffect, useState } from "react";
 
 export default function AdminContentPage() {
   const { token } = useAuth();
+  const { t } = useI18n();
   const toast = useToast();
   const [items, setItems] = useState<VenueContentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +47,7 @@ export default function AdminContentPage() {
             <div className="mt-3 flex flex-wrap gap-2">
               <Button variant="secondary" onClick={() => void moderate(item.id, { status: "hidden" })}>Sakrij</Button>
               <Button variant="secondary" onClick={() => void moderate(item.id, { status: "published" })}>Vrati</Button>
-              <Button variant="secondary" onClick={() => void moderate(item.id, { status: "cancelled" })}>Otkaži događaj</Button>
+              <Button variant="secondary" onClick={() => void moderate(item.id, { status: "cancelled" })}>{t("action.cancel")}</Button>
               <Button variant="danger" onClick={() => void moderate(item.id, { status: "hidden", publishing_suspended: true })}>Obustavi objavljivanje</Button>
               <Button variant="ghost" onClick={() => void moderate(item.id, { status: "published", publishing_suspended: false })}>Dozvoli objavljivanje</Button>
             </div>

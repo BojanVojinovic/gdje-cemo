@@ -85,8 +85,9 @@ class FollowController extends Controller
             while (ob_get_level() > 0) {
                 ob_end_flush();
             }
+            $holdFor = app()->environment('local') ? 1 : 20;
             $started = time();
-            while (time() - $started < 20) {
+            while (time() - $started < $holdFor) {
                 $rows = UserNotification::query()
                     ->where('user_id', $userId)
                     ->where('id', '>', $after)
@@ -110,7 +111,7 @@ class FollowController extends Controller
                 }
                 echo ": ping\n\n";
                 flush();
-                sleep(2);
+                sleep(app()->environment('local') ? 1 : 2);
             }
         }, 200, [
             'Content-Type' => 'text/event-stream',

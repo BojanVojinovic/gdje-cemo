@@ -1,4 +1,4 @@
-import { readLocaleCookie, translate } from "@/lib/i18n";
+import { readLocaleCookie, translate, type Locale } from "@/lib/i18n";
 import type { ApiSuccess } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
@@ -20,10 +20,11 @@ type Options = {
   token?: string | null;
   formData?: FormData;
   cache?: RequestCache;
+  locale?: Locale;
 };
 
 export async function api<T>(path: string, options: Options = {}): Promise<ApiSuccess<T>> {
-  const locale = readLocaleCookie();
+  const locale = options.locale ?? readLocaleCookie();
   const headers: Record<string, string> = { Accept: "application/json", "Accept-Language": locale };
 
   if (options.token) {

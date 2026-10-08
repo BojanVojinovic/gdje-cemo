@@ -80,8 +80,6 @@ class DeliveryController extends Controller
 
     private function locale(Request $request): string
     {
-        $locale = $request->user()?->locale;
-
-        return $locale === 'cnr' || str_starts_with((string) $request->header('Accept-Language'), 'cnr') ? 'cnr' : 'en';
+        return \App\Support\ContentLocales::fromRequest($request);
     }
 }

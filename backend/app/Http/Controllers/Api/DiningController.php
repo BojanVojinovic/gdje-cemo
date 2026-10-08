@@ -341,7 +341,7 @@ class DiningController extends Controller
             $ids[] = $order->venue->business->owner_id;
         }
         User::query()->whereIn('id', array_unique($ids))->get()->each(function (User $user) use ($notifications, $order) {
-            $locale = $user->locale === 'cnr' ? 'cnr' : 'en';
+            $locale = \App\Support\ContentLocales::normalize($user->locale);
             $notifications->notify($user, 'TABLE_ORDER', trans('messages.table_order_title', [], $locale), trans('messages.table_order_body', [
                 'table' => $order->table_name_snapshot,
             ], $locale), [

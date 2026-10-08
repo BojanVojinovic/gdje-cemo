@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { createContext, useContext, useState } from "react";
 
 type Toast = { id: number; message: string };
@@ -39,11 +40,12 @@ export function Button({
   loading = false,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "ghost" | "danger" | "outline"; loading?: boolean }) {
+  const { t } = useI18n();
   const styles = {
     primary: "bg-sea text-snow hover:bg-sea-deep",
     secondary: "bg-paper text-ink border border-line hover:border-sea",
-    outline: "border border-sea bg-transparent text-snow hover:bg-sea/15",
-    ghost: "bg-transparent text-ink hover:bg-snow/10",
+    outline: "border border-sea bg-transparent text-ink hover:bg-sea/15",
+    ghost: "bg-transparent text-ink hover:bg-ink/10",
     danger: "bg-coral text-white hover:bg-sea-deep",
   }[variant];
 
@@ -53,7 +55,7 @@ export function Button({
       disabled={props.disabled || loading}
       className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold tracking-wide transition duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${styles} ${className}`}
     >
-      {loading ? "Sačekajte…" : children}
+      {loading ? t("action.wait") : children}
     </button>
   );
 }
@@ -81,12 +83,12 @@ export const inputClass =
 
 export function Badge({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "neutral" | "open" | "closed" | "verified" | "warning" | "info" }) {
   const tones = {
-    neutral: "bg-snow/10 text-ink",
+    neutral: "bg-ink/10 text-ink",
     open: "bg-success/15 text-success",
-    closed: "bg-snow/10 text-muted",
-    verified: "bg-sea/20 text-snow",
+    closed: "bg-ink/10 text-muted",
+    verified: "bg-sea/20 text-ink",
     warning: "bg-warning/15 text-warning",
-    info: "bg-sea/15 text-snow",
+    info: "bg-sea/15 text-ink",
   }[tone];
   return <span className={`inline-flex items-center rounded-sm px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] ${tones}`}>{children}</span>;
 }

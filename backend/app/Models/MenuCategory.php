@@ -8,7 +8,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MenuCategory extends Model
 {
-    protected $fillable = ['menu_id', 'name', 'station', 'sort_order'];
+    protected $fillable = ['menu_id', 'name', 'station', 'sort_order', 'translations'];
+
+    protected function casts(): array
+    {
+        return ['translations' => 'array'];
+    }
 
     public static function stationForName(string $name): string
     {

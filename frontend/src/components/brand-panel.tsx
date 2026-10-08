@@ -1,6 +1,7 @@
 "use client";
 
 import { useI18n } from "@/components/i18n-provider";
+import { CopyEditor, type CopyBag } from "@/components/locale-tabs";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { brandButtonStyle } from "@/lib/brand";
@@ -12,7 +13,8 @@ export function BrandPanel({ venue, onChange }: { venue: Venue; onChange: () => 
   const { token } = useAuth();
   const { t } = useI18n();
   const toast = useToast();
-  const [tagline, setTagline] = useState(venue.tagline ?? "");
+  const [tagline, setTagline] = useState(venue.source?.tagline ?? venue.tagline ?? "");
+  const [translations, setTranslations] = useState<CopyBag>((venue.translations ?? {}) as CopyBag);
   const [useColor, setUseColor] = useState(Boolean(venue.brand_color));
   const [color, setColor] = useState(venue.brand_color || "#c45c26");
   const [saving, setSaving] = useState(false);
@@ -28,6 +30,7 @@ export function BrandPanel({ venue, onChange }: { venue: Venue; onChange: () => 
         body: {
           tagline: tagline.trim() || null,
           brand_color: useColor ? color : null,
+          translations: taglineCopy(translations),
         },
       });
       toast(t("brand.saved"));
@@ -55,13 +58,18 @@ export function BrandPanel({ venue, onChange }: { venue: Venue; onChange: () => 
   async function clearLook() {
     if (!token) return;
     setTagline("");
+    setTranslations({});
     setUseColor(false);
     setSaving(true);
     try {
       await api(`/business/venues/${venue.id}`, {
         method: "PUT",
         token,
-        body: { tagline: null, brand_color: null },
+        body: {
+          tagline: null,
+          brand_color: null,
+          translations: taglineCopy(Object.fromEntries(["en", "ru", "it", "de", "fr", "es"].map((code) => [code, { tagline: "" }])) as CopyBag),
+        },
       });
       toast(t("brand.saved"));
       await onChange();
@@ -88,10 +96,14 @@ export function BrandPanel({ venue, onChange }: { venue: Venue; onChange: () => 
           <h2 className="font-serif text-2xl">{t("brand.title")}</h2>
           <p className="mt-1 text-sm text-muted">{t("brand.lead")}</p>
         </div>
-        <Field label={t("brand.tagline")}>
-          <input className={inputClass} maxLength={160} value={tagline} onChange={(event) => setTagline(event.target.value)} />
-          <span className="text-xs text-muted">{t("brand.taglineHint")}</span>
-        </Field>
+        <CopyEditor
+          fields={[{ id: "tagline", label: t("brand.tagline"), required: false }]}
+          source={{ tagline }}
+          setSource={(_id, value) => setTagline(value.slice(0, 160))}
+          bag={translations}
+          setBag={setTranslations}
+        />
+        <p className="text-xs text-muted">{t("brand.taglineHint")}</p>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={useColor} onChange={(event) => setUseColor(event.target.checked)} />
           {t("brand.useColor")}
@@ -137,6 +149,14 @@ export function BrandPanel({ venue, onChange }: { venue: Venue; onChange: () => 
       </div>
     </div>
   );
+}
+
+function taglineCopy(bag: CopyBag): CopyBag {
+  const next: CopyBag = {};
+  (["en", "ru", "it", "de", "fr", "es"] as const).forEach((code) => {
+    if (bag[code] && "tagline" in bag[code]) next[code] = { tagline: bag[code].tagline ?? "" };
+  });
+  return next;
 }
 
 function luma(hex: string): number {

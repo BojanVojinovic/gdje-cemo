@@ -1,6 +1,8 @@
 "use client";
 
+import { BrandMark } from "@/components/brand-mark";
 import { useI18n } from "@/components/i18n-provider";
+import { brandName } from "@/lib/brand-name";
 import { Button, Field, inputClass } from "@/components/ui";
 import { ApiError, fieldError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -58,7 +60,10 @@ export function AuthCard({ title, children }: { title: string; children: React.R
   return (
     <div className="mx-auto grid max-w-5xl gap-10 px-4 py-14 md:grid-cols-2 md:items-center">
       <div className="hidden md:block">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sea">Gdje ćemo</p>
+        <p className="flex items-center gap-2.5 text-ink">
+          <BrandMark className="size-9" />
+          <span className="font-serif text-3xl leading-none">{brandName}</span>
+        </p>
         <h2 className="mt-3 font-serif text-5xl leading-tight">{t("auth.aside")}</h2>
       </div>
       <div>

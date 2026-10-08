@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { inputClass } from "@/components/ui";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -14,7 +15,7 @@ export function ComboBox({
   value,
   onChange,
   options,
-  placeholder = "Izaberite",
+  placeholder,
   id,
   className = "",
   ariaLabel,
@@ -94,6 +95,8 @@ export function ComboBox({
     }
   }
 
+  const { t } = useI18n();
+  const hint = placeholder ?? t("field.choose");
   let lastGroup = "";
 
   return (
@@ -108,7 +111,7 @@ export function ComboBox({
         aria-autocomplete="list"
         autoComplete="off"
         className={`${inputClass} pr-12 ${className}`}
-        placeholder={placeholder}
+        placeholder={hint}
         value={open ? query : (selected?.label ?? "")}
         onFocus={() => { setQuery(""); setActive(0); setOpen(true); }}
         onChange={(event) => { setQuery(event.target.value); setActive(0); setOpen(true); }}
@@ -138,7 +141,7 @@ export function ComboBox({
                   type="button"
                   role="option"
                   aria-selected={option.value === value}
-                  className={`block w-full px-3 py-2 text-left text-sm ${index === active ? "bg-sea/20 text-snow" : "text-ink"}`}
+                  className={`block w-full px-3 py-2 text-left text-sm ${index === active ? "bg-sea/20 text-ink" : "text-ink"}`}
                   onMouseDown={(event) => event.preventDefault()}
                   onMouseEnter={() => setActive(index)}
                   onClick={() => choose(option.value)}

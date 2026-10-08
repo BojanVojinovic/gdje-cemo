@@ -1,0 +1,14 @@
+export function BrandMark({ className = "size-9" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
+      <rect width="64" height="64" rx="16" fill="#123056" />
+      <g transform="translate(32 33) scale(1.42) translate(-32 -30)">
+        <path d="M14 18h11l-1.6 13H16.2Z" fill="#f6f1e8" />
+        <path d="M19.2 31v9.2M14.4 40.6h10" fill="none" stroke="#f6f1e8" strokeWidth="2.1" strokeLinecap="round" />
+        <path d="M39 18h11l-1.6 13H41.2Z" fill="#f6f1e8" />
+        <path d="M44.2 31v9.2M39.4 40.6h10" fill="none" stroke="#f6f1e8" strokeWidth="2.1" strokeLinecap="round" />
+        <path d="M30.2 14.5 32 18.2 33.8 14.5 32 16.2Z" fill="#e4b15a" />
+      </g>
+    </svg>
+  );
+}

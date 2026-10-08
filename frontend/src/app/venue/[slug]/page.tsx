@@ -20,9 +20,9 @@ import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-const loadVenue = cache(async (slug: string) => {
+const loadVenue = cache(async (slug: string, locale: ReturnType<typeof normalizeLocale>) => {
   try {
-    return (await api<VenueDetail>(`/venues/${slug}`)).data;
+    return (await api<VenueDetail>(`/venues/${slug}`, { locale })).data;
   } catch {
     return null;
   }
@@ -30,8 +30,9 @@ const loadVenue = cache(async (slug: string) => {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const detail = await loadVenue(slug);
-  if (!detail) return { title: "Mjesto nije pronađeno" };
+  const locale = normalizeLocale((await cookies()).get("gdje-locale")?.value);
+  const detail = await loadVenue(slug, locale);
+  if (!detail) return { title: translate(locale, "venue.notFound") };
   const venue = detail.venue;
   const description = venue.excerpt;
   const url = `/venue/${venue.slug}`;
@@ -53,7 +54,7 @@ export default async function VenuePage({ params }: { params: Promise<{ slug: st
   const { slug } = await params;
   const locale = normalizeLocale((await cookies()).get("gdje-locale")?.value);
   const t = (key: string) => translate(locale, key);
-  const detail = await loadVenue(slug);
+  const detail = await loadVenue(slug, locale);
   if (!detail) notFound();
   const venue = detail.venue;
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -90,7 +91,7 @@ export default async function VenuePage({ params }: { params: Promise<{ slug: st
       </div>
       <div className="mx-auto max-w-6xl px-4">
         <div className="relative -mt-16 border border-line bg-paper p-5 shadow-[var(--shadow-card)] sm:-mt-20 sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted" style={venue.brand_color ? { color: venue.brand_color } : undefined}>{venue.category?.name}{venue.subcategory ? ` · ${venue.subcategory.name}` : ""} · {venue.city}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted" style={venue.brand_color ? { color: venue.brand_color } : undefined}>{venue.category?.label || venue.category?.name}{venue.subcategory ? ` · ${venue.subcategory.label || venue.subcategory.name}` : ""} · {venue.city}</p>
           <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
             <div className="flex items-end gap-4">
               {venue.logo_url ? <img src={venue.logo_url} alt="" className="h-16 w-16 shrink-0 rounded-2xl border border-line bg-void object-contain p-1 sm:h-20 sm:w-20" /> : null}
@@ -136,7 +137,7 @@ export default async function VenuePage({ params }: { params: Promise<{ slug: st
             <h2 className="font-serif text-3xl">{t("venue.menu")}</h2>
             {venue.menu?.categories?.length ? (
               <div className="mt-4">
-                <nav aria-label="Kategorije menija" className="sticky top-[4.25rem] z-10 -mx-4 flex gap-2 overflow-x-auto bg-cream/95 px-4 py-3">
+                <nav aria-label={t("venue.menuCategories")} className="sticky top-[4.25rem] z-10 -mx-4 flex gap-2 overflow-x-auto bg-cream/95 px-4 py-3">
                   {venue.menu.categories.map((category) => (
                     <a key={category.id} href={`#meni-${category.id}`} className="shrink-0 border border-line bg-paper px-3 py-2 text-sm font-semibold">
                       {category.name}
@@ -157,7 +158,7 @@ export default async function VenuePage({ params }: { params: Promise<{ slug: st
                                 <p className="shrink-0 text-sm font-semibold">{formatPrice(Number(item.price))}</p>
                               </div>
                               {item.description ? <p className="mt-1 text-sm text-muted">{item.description}</p> : null}
-                              {!item.is_available ? <p className="mt-1 text-xs text-coral">Trenutno nedostupno</p> : null}
+                              {!item.is_available ? <p className="mt-1 text-xs text-coral">{t("venue.unavailable")}</p> : null}
                             </div>
                           </li>
                         ))}
@@ -175,21 +176,21 @@ export default async function VenuePage({ params }: { params: Promise<{ slug: st
         </div>
         <aside className="w-full shrink-0 space-y-6 lg:w-80">
           <section className="rounded-lg border border-line bg-paper p-5">
-            <h2 className="font-serif text-2xl">Radno vrijeme</h2>
+            <h2 className="font-serif text-2xl">{t("venue.hours")}</h2>
             <ul className="mt-3 space-y-2 text-sm">
               {venue.opening_hours?.map((day) => (
                 <li key={day.day} className="flex justify-between gap-4">
-                  <span>{day.label}</span>
-                  <span className="text-right text-muted">{day.closed ? "Zatvoreno" : day.intervals.map((interval) => `${interval.opens_at}–${interval.closes_at}`).join(", ")}</span>
+                  <span>{t(`day.${day.day}`)}</span>
+                  <span className="text-right text-muted">{day.closed ? t("venue.closedToday") : day.intervals.map((interval) => `${interval.opens_at}–${interval.closes_at}`).join(", ")}</span>
                 </li>
               ))}
             </ul>
           </section>
           <section className="rounded-lg border border-line bg-paper p-5 text-sm">
-            <h2 className="font-serif text-2xl">Kontakt</h2>
+            <h2 className="font-serif text-2xl">{t("venue.contact")}</h2>
             <p className="mt-3">{venue.address}, {venue.city}</p>
             {venue.phone ? <p className="mt-1"><a href={`tel:${venue.phone}`}>{venue.phone}</a></p> : null}
-            {venue.website ? <p className="mt-1"><a href={venue.website} className="text-sea">Sajt</a></p> : null}
+            {venue.website ? <p className="mt-1"><a href={venue.website} className="text-sea">{t("field.website")}</a></p> : null}
             <div className="mt-2 flex gap-3">
               {venue.socials.instagram ? <a href={venue.socials.instagram} className="text-sea">Instagram</a> : null}
               {venue.socials.facebook ? <a href={venue.socials.facebook} className="text-sea">Facebook</a> : null}
@@ -209,7 +210,7 @@ export default async function VenuePage({ params }: { params: Promise<{ slug: st
       </div>
       {detail.similar.length ? (
         <section className="mx-auto max-w-6xl space-y-4 px-4 pb-12">
-          <h2 className="font-serif text-3xl">Slična mjesta</h2>
+          <h2 className="font-serif text-3xl">{t("venue.similar")}</h2>
           <VenueGrid venues={detail.similar} />
         </section>
       ) : null}

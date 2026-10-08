@@ -22,7 +22,7 @@ class AuthController extends Controller
     public function register(RegisterRequest $request, EmailVerificationCodeService $codes): JsonResponse
     {
         $role = Role::query()->where('slug', 'customer')->firstOrFail();
-        $locale = str_starts_with((string) $request->header('Accept-Language'), 'cnr') ? 'cnr' : 'en';
+        $locale = \App\Support\ContentLocales::fromRequest($request);
 
         $user = User::query()->create([
             ...$request->safe()->except('password'),
@@ -47,7 +47,7 @@ class AuthController extends Controller
             'code' => ['required', 'digits:6'],
         ]);
         $user = $codes->confirm($data['email'], $data['code']);
-        $locale = $user->locale === 'cnr' ? 'cnr' : 'en';
+        $locale = \App\Support\ContentLocales::normalize($user->locale);
         $token = $user->createToken('api')->plainTextToken;
 
         return ApiResponse::success([
@@ -71,7 +71,7 @@ class AuthController extends Controller
         }
 
         if (! $user->hasVerifiedEmail()) {
-            $locale = $user->locale === 'cnr' ? 'cnr' : 'en';
+            $locale = \App\Support\ContentLocales::normalize($user->locale);
 
             return ApiResponse::error(trans('messages.login_unverified', [], $locale), 403, [
                 'email' => [trans('messages.email_unverified', [], $locale)],
@@ -170,6 +170,6 @@ class AuthController extends Controller
 
     private function locale(Request $request): string
     {
-        return str_starts_with((string) $request->header('Accept-Language'), 'cnr') ? 'cnr' : 'en';
+        return \App\Support\ContentLocales::fromRequest($request);
     }
 }

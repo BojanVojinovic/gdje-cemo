@@ -445,7 +445,7 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        Setting::query()->updateOrCreate(['key' => 'site_name'], ['value' => 'Gdje ćemo']);
+        Setting::query()->updateOrCreate(['key' => 'site_name'], ['value' => 'Shall We']);
         Setting::query()->updateOrCreate(['key' => 'tagline'], ['value' => 'Restorani, kafići i barovi u Crnoj Gori, sa radnim vremenom i jelovnikom.']);
         Setting::query()->updateOrCreate(['key' => 'support_email'], ['value' => 'podrska@gdjecemo.me']);
         Setting::query()->updateOrCreate(['key' => 'default_city'], ['value' => 'Podgorica']);
@@ -499,6 +499,7 @@ class DatabaseSeeder extends Seeder
                 'icon' => $icon,
                 'sort_order' => $index,
                 'parent_id' => null,
+                'translations' => \App\Support\ContentLocales::catalog()['categories'][$slug] ?? null,
             ]);
             $map[$slug] = $parent;
 
@@ -508,6 +509,7 @@ class DatabaseSeeder extends Seeder
                     'parent_id' => $parent->id,
                     'icon' => $icon,
                     'sort_order' => $childIndex,
+                    'translations' => \App\Support\ContentLocales::catalog()['categories'][$childSlug] ?? null,
                 ]);
             }
         }
@@ -536,7 +538,11 @@ class DatabaseSeeder extends Seeder
 
         $map = [];
         foreach ($rows as [$name, $slug]) {
-            $map[$slug] = Amenity::query()->updateOrCreate(['slug' => $slug], ['name' => $name, 'icon' => $slug]);
+            $map[$slug] = Amenity::query()->updateOrCreate(['slug' => $slug], [
+                'name' => $name,
+                'icon' => $slug,
+                'translations' => \App\Support\ContentLocales::catalog()['amenities'][$slug] ?? null,
+            ]);
         }
 
         return $map;

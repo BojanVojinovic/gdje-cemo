@@ -1,6 +1,7 @@
 "use client";
 
 import { useI18n } from "@/components/i18n-provider";
+import { CopyEditor, type CopyBag } from "@/components/locale-tabs";
 import { BrandPanel } from "@/components/brand-panel";
 import { VenueForm } from "@/components/venue-form";
 import { FieldSkeleton, StatGridSkeleton } from "@/components/skeletons";
@@ -51,18 +52,18 @@ export default function ManageVenuePage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-serif text-4xl">{venue.name}</h1>
-          <p className="text-sm text-muted">{detail.stats.profile_views} pregleda · {detail.stats.menu_views} menija · {detail.stats.favorites_count} sačuvanih · ocjena {detail.stats.rating_avg}</p>
+          <p className="text-sm text-muted">{t("venue.stats", { views: detail.stats.profile_views, menu: detail.stats.menu_views, saved: detail.stats.favorites_count, rating: detail.stats.rating_avg })}</p>
         </div>
         <div className="flex flex-wrap gap-3 text-sm">
-          <Link href={`/business/venues/${venue.id}/floor-plan`} className="text-sea">Tlocrt</Link>
-          <Link href={`/business/venues/${venue.id}/tables`} className="text-sea">Stolovi</Link>
-          <Link href={`/venue/${venue.slug}`} className="text-sea">Javni profil</Link>
+          <Link href={`/business/venues/${venue.id}/floor-plan`} className="text-sea">{t("venue.floor")}</Link>
+          <Link href={`/business/venues/${venue.id}/tables`} className="text-sea">{t("venue.tables")}</Link>
+          <Link href={`/venue/${venue.slug}`} className="text-sea">{t("brand.title")}</Link>
         </div>
       </div>
       <div className="flex gap-2 overflow-x-auto">
         {(["info", "look", "photos", "hours", "menu", "staff", "reviews"] as const).map((item) => (
           <button key={item} type="button" onClick={() => setTab(item)} className={`min-h-11 rounded-full px-4 text-sm ${tab === item ? "bg-sea text-snow" : "bg-paper"}`}>
-            {{ info: "Podaci", look: t("brand.tab"), photos: "Fotografije", hours: "Radno vrijeme", menu: "Meni", staff: "Osoblje", reviews: "Recenzije" }[item]}
+            {{ info: t("venue.details"), look: t("brand.tab"), photos: t("photo.gallery"), hours: t("venue.hours"), menu: t("nav.menu"), staff: t("nav.staff"), reviews: t("profile.reviews") }[item]}
           </button>
         ))}
       </div>
@@ -81,7 +82,7 @@ export default function ManageVenuePage() {
           router.push("/business/venues");
         }}
       >
-        Obriši mjesto
+        {t("action.delete")}
       </Button>
     </div>
   );
@@ -89,6 +90,7 @@ export default function ManageVenuePage() {
 
 function Photos({ venue, onChange }: { venue: Venue; onChange: () => Promise<void> }) {
   const { token } = useAuth();
+  const { t } = useI18n();
   const toast = useToast();
 
   async function upload(path: string, files: FileList, field: string) {
@@ -125,11 +127,11 @@ function Photos({ venue, onChange }: { venue: Venue; onChange: () => Promise<voi
 
   return (
     <div className="space-y-4 rounded-lg border border-line bg-paper p-5">
-      <label className="block text-sm">Naslovna
+      <label className="block text-sm">{t("photo.cover")}
         <input type="file" accept="image/jpeg,image/png,image/webp" className="mt-2 block" onChange={(event) => { if (event.target.files) void upload(`/business/venues/${venue.id}/cover`, event.target.files, "image"); }} />
       </label>
       {venue.cover_url ? <img src={venue.cover_url} alt="" className="h-40 w-full rounded-2xl object-cover" /> : null}
-      <label className="block text-sm">Galerija
+      <label className="block text-sm">{t("photo.gallery")}
         <input type="file" multiple accept="image/jpeg,image/png,image/webp" className="mt-2 block" onChange={(event) => { if (event.target.files) void upload(`/business/venues/${venue.id}/images`, event.target.files, "images"); }} />
       </label>
       <div className="grid grid-cols-3 gap-2">
@@ -137,9 +139,9 @@ function Photos({ venue, onChange }: { venue: Venue; onChange: () => Promise<voi
           <div key={image.id} className="overflow-hidden rounded-2xl">
             {image.thumb_url ? <img src={image.thumb_url} alt={image.alt ?? ""} className="h-24 w-full object-cover" /> : null}
             <div className="flex justify-between px-2 py-1 text-xs">
-              <button type="button" onClick={() => move(image.id, -1)} disabled={index === 0}>Lijevo</button>
-              <button type="button" onClick={() => move(image.id, 1)} disabled={index === (venue.images?.length ?? 1) - 1}>Desno</button>
-              <button type="button" className="text-coral" onClick={() => remove(image.id)}>Obriši</button>
+              <button type="button" onClick={() => move(image.id, -1)} disabled={index === 0}>{t("gallery.left")}</button>
+              <button type="button" onClick={() => move(image.id, 1)} disabled={index === (venue.images?.length ?? 1) - 1}>{t("gallery.right")}</button>
+              <button type="button" className="text-coral" onClick={() => remove(image.id)}>{t("action.delete")}</button>
             </div>
           </div>
         ))}
@@ -150,6 +152,7 @@ function Photos({ venue, onChange }: { venue: Venue; onChange: () => Promise<voi
 
 function Hours({ venue, onChange }: { venue: Venue; onChange: () => Promise<void> }) {
   const { token } = useAuth();
+  const { t } = useI18n();
   const toast = useToast();
   const [days, setDays] = useState<OpeningDay[]>(venue.opening_hours ?? []);
 
@@ -184,7 +187,7 @@ function Hours({ venue, onChange }: { venue: Venue; onChange: () => Promise<void
     <div className="space-y-3 rounded-lg border border-line bg-paper p-5">
       {days.map((day) => (
         <div key={day.day} className="grid items-center gap-2 sm:grid-cols-[140px_1fr_auto]">
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={day.closed} onChange={() => setDays((current) => current.map((item) => item.day === day.day ? { ...item, closed: !item.closed, intervals: item.intervals.length ? item.intervals : [{ opens_at: "09:00", closes_at: "17:00" }] } : item))} /> {day.label} zatvoreno</label>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={day.closed} onChange={() => setDays((current) => current.map((item) => item.day === day.day ? { ...item, closed: !item.closed, intervals: item.intervals.length ? item.intervals : [{ opens_at: "09:00", closes_at: "17:00" }] } : item))} /> {t(`day.${day.day}`)} {t("hours.closed")}</label>
           <div className="flex flex-wrap gap-2">
             {(day.intervals.length ? day.intervals : [{ opens_at: "09:00", closes_at: "17:00" }]).map((interval, index) => (
               <span key={index} className="flex gap-1">
@@ -193,54 +196,57 @@ function Hours({ venue, onChange }: { venue: Venue; onChange: () => Promise<void
               </span>
             ))}
           </div>
-          <button type="button" className="text-sm text-sea" onClick={() => setDays((current) => current.map((item) => item.day === day.day ? { ...item, closed: false, intervals: [...(item.intervals.length ? item.intervals : [{ opens_at: "09:00", closes_at: "17:00" }]), { opens_at: "17:00", closes_at: "23:00" }] } : item))}>+ interval</button>
+          <button type="button" className="text-sm text-sea" onClick={() => setDays((current) => current.map((item) => item.day === day.day ? { ...item, closed: false, intervals: [...(item.intervals.length ? item.intervals : [{ opens_at: "09:00", closes_at: "17:00" }]), { opens_at: "17:00", closes_at: "23:00" }] } : item))}>{t("hours.interval")}</button>
         </div>
       ))}
-      <Button onClick={save}>Sačuvaj radno vrijeme</Button>
+      <Button onClick={save}>{t("hours.save")}</Button>
     </div>
   );
 }
 
 function MenuEditor({ venue, onChange }: { venue: Venue; onChange: () => Promise<void> }) {
   const { token } = useAuth();
+  const { t } = useI18n();
   const toast = useToast();
   const [name, setName] = useState("");
+  const [copy, setCopy] = useState<CopyBag>({});
   const [station, setStation] = useState<"kitchen" | "bar">("kitchen");
   const categories = venue.menu?.categories ?? [];
 
   async function addCategory(event: React.FormEvent) {
     event.preventDefault();
     if (!token) return;
-    await api(`/business/venues/${venue.id}/menu/categories`, { method: "POST", token, body: { name, station } });
+    await api(`/business/venues/${venue.id}/menu/categories`, { method: "POST", token, body: { name, station, translations: copy } });
     setName("");
+    setCopy({});
     setStation("kitchen");
     await onChange();
   }
 
-  async function addItem(category: MenuCategory, itemName: string, price: string) {
+  async function addItem(category: MenuCategory, itemName: string, price: string, description: string, translations: CopyBag) {
     if (!token) return;
     try {
-      await api(`/business/menu/categories/${category.id}/items`, { method: "POST", token, body: { name: itemName, price: Number(price), is_available: true } });
+      await api(`/business/menu/categories/${category.id}/items`, { method: "POST", token, body: { name: itemName, description: description || null, price: Number(price), is_available: true, translations } });
       await onChange();
     } catch (error) {
       toast(error instanceof ApiError ? error.message : "Stavka nije dodata.");
     }
   }
 
-  async function toggle(itemId: number, isAvailable: boolean, itemName: string, price: number) {
+  async function toggle(itemId: number, isAvailable: boolean) {
     if (!token) return;
-    await api(`/business/menu/items/${itemId}`, { method: "PUT", token, body: { name: itemName, price, is_available: !isAvailable } });
+    await api(`/business/menu/items/${itemId}`, { method: "PUT", token, body: { is_available: !isAvailable } });
     await onChange();
   }
 
   async function removeItem(id: number) {
-    if (!token || !window.confirm("Obrisati stavku?")) return;
+    if (!token || !window.confirm(t("menu.deleteItem"))) return;
     await api(`/business/menu/items/${id}`, { method: "DELETE", token });
     await onChange();
   }
 
   async function removeCategory(id: number) {
-    if (!token || !window.confirm("Obrisati kategoriju i sve stavke?")) return;
+    if (!token || !window.confirm(t("menu.deleteCategory"))) return;
     await api(`/business/menu/categories/${id}`, { method: "DELETE", token });
     await onChange();
   }
@@ -283,21 +289,23 @@ function MenuEditor({ venue, onChange }: { venue: Venue; onChange: () => Promise
 
   async function setCategoryStation(category: MenuCategory, next: "kitchen" | "bar") {
     if (!token) return;
-    await api(`/business/menu/categories/${category.id}`, { method: "PUT", token, body: { name: category.name, station: next } });
+    await api(`/business/menu/categories/${category.id}`, { method: "PUT", token, body: { name: category.source_name || category.name, station: next } });
     await onChange();
   }
 
   return (
     <div className="space-y-4">
-      <form onSubmit={addCategory} className="flex flex-wrap gap-2">
-        <input className={inputClass} value={name} onChange={(event) => setName(event.target.value)} placeholder="Nova kategorija menija" required />
-        <select className={inputClass + " max-w-40"} value={station} onChange={(event) => setStation(event.target.value as "kitchen" | "bar")}>
-          <option value="kitchen">Kuhinja</option>
-          <option value="bar">Šank</option>
-        </select>
-        <Button type="submit">Dodaj</Button>
+      <form onSubmit={addCategory} className="space-y-3">
+        <CopyEditor fields={[{ id: "name", label: t("field.menuCategory") }]} source={{ name }} setSource={(_id, value) => setName(value)} bag={copy} setBag={setCopy} />
+        <div className="flex flex-wrap gap-2">
+          <select className={inputClass + " max-w-40"} value={station} onChange={(event) => setStation(event.target.value as "kitchen" | "bar")} aria-label={t("field.kitchen")}>
+            <option value="kitchen">{t("field.kitchen")}</option>
+            <option value="bar">{t("field.bar")}</option>
+          </select>
+          <Button type="submit">{t("action.add")}</Button>
+        </div>
       </form>
-      {categories.length === 0 ? <p className="text-sm text-muted">Nema stavki menija.</p> : null}
+      {categories.length === 0 ? <p className="text-sm text-muted">{t("menu.empty")}</p> : null}
       {categories.map((category, index) => (
         <CategoryBlock
           key={category.id}
@@ -335,15 +343,18 @@ function CategoryBlock({
   canMoveUp: boolean;
   canMoveDown: boolean;
   onMove: (direction: -1 | 1) => Promise<void>;
-  onAdd: (category: MenuCategory, name: string, price: string) => Promise<void>;
-  onToggle: (id: number, available: boolean, name: string, price: number) => Promise<void>;
+  onAdd: (category: MenuCategory, name: string, price: string, description: string, translations: CopyBag) => Promise<void>;
+  onToggle: (id: number, available: boolean) => Promise<void>;
   onRemoveItem: (id: number) => Promise<void>;
   onRemoveCategory: (id: number) => Promise<void>;
   onMoveItem: (id: number, direction: -1 | 1) => Promise<void>;
   onImage: (id: number, file: File) => Promise<void>;
   onStation: (station: "kitchen" | "bar") => Promise<void>;
 }) {
+  const { t } = useI18n();
   const [itemName, setItemName] = useState("");
+  const [description, setDescription] = useState("");
+  const [copy, setCopy] = useState<CopyBag>({});
   const [price, setPrice] = useState("");
 
   return (
@@ -352,14 +363,14 @@ function CategoryBlock({
         <span className="flex items-center gap-3">
           <h2 className="font-medium">{category.name}</h2>
           <select className={inputClass + " w-32 py-1"} value={category.station ?? "kitchen"} onChange={(event) => void onStation(event.target.value as "kitchen" | "bar")}>
-            <option value="kitchen">Kuhinja</option>
-            <option value="bar">Šank</option>
+            <option value="kitchen">{t("field.kitchen")}</option>
+            <option value="bar">{t("field.bar")}</option>
           </select>
         </span>
         <span className="flex gap-3 text-sm">
-          <button type="button" disabled={!canMoveUp} onClick={() => onMove(-1)}>Gore</button>
-          <button type="button" disabled={!canMoveDown} onClick={() => onMove(1)}>Dolje</button>
-          <button type="button" className="text-coral" onClick={() => onRemoveCategory(category.id)}>Obriši</button>
+          <button type="button" disabled={!canMoveUp} onClick={() => onMove(-1)}>{t("action.up")}</button>
+          <button type="button" disabled={!canMoveDown} onClick={() => onMove(1)}>{t("action.down")}</button>
+          <button type="button" className="text-coral" onClick={() => onRemoveCategory(category.id)}>{t("action.delete")}</button>
         </span>
       </div>
       <ul className="mt-2 divide-y divide-line">
@@ -367,22 +378,33 @@ function CategoryBlock({
           <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm">
             <span className={item.is_available ? "" : "text-muted"}>{item.name} · {formatPrice(Number(item.price))}</span>
             <span className="flex flex-wrap items-center gap-3">
-              <button type="button" disabled={index === 0} onClick={() => onMoveItem(item.id, -1)}>Gore</button>
-              <button type="button" disabled={index === (category.items?.length ?? 1) - 1} onClick={() => onMoveItem(item.id, 1)}>Dolje</button>
-              <button type="button" onClick={() => onToggle(item.id, item.is_available, item.name, Number(item.price))}>{item.is_available ? "Sakrij" : "Vrati"}</button>
+              <button type="button" disabled={index === 0} onClick={() => onMoveItem(item.id, -1)}>{t("action.up")}</button>
+              <button type="button" disabled={index === (category.items?.length ?? 1) - 1} onClick={() => onMoveItem(item.id, 1)}>{t("action.down")}</button>
+              <button type="button" onClick={() => onToggle(item.id, item.is_available)}>{item.is_available ? t("action.hide") : t("action.restore")}</button>
               <label className="cursor-pointer">
-                Foto
+                {t("action.photo")}
                 <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) void onImage(item.id, file); }} />
               </label>
-              <button type="button" onClick={() => onRemoveItem(item.id)}>Obriši</button>
+              <button type="button" onClick={() => onRemoveItem(item.id)}>{t("action.delete")}</button>
             </span>
           </li>
         ))}
       </ul>
-      <form className="mt-3 flex flex-wrap gap-2" onSubmit={(event) => { event.preventDefault(); void onAdd(category, itemName, price).then(() => { setItemName(""); setPrice(""); }); }}>
-        <input className={inputClass + " max-w-xs"} value={itemName} onChange={(event) => setItemName(event.target.value)} placeholder="Stavka" required />
-        <input className={inputClass + " max-w-32"} value={price} onChange={(event) => setPrice(event.target.value)} placeholder="Cijena" required />
-        <Button type="submit" variant="secondary">Dodaj stavku</Button>
+      <form className="mt-3 space-y-3" onSubmit={(event) => { event.preventDefault(); void onAdd(category, itemName, price, description, copy).then(() => { setItemName(""); setDescription(""); setCopy({}); setPrice(""); }); }}>
+        <CopyEditor
+          fields={[
+            { id: "name", label: t("field.item") },
+            { id: "description", label: t("field.itemDescription"), rows: 2, required: false },
+          ]}
+          source={{ name: itemName, description }}
+          setSource={(id, value) => { if (id === "name") setItemName(value); else setDescription(value); }}
+          bag={copy}
+          setBag={setCopy}
+        />
+        <div className="flex flex-wrap gap-2">
+          <input className={inputClass + " max-w-32"} value={price} onChange={(event) => setPrice(event.target.value)} placeholder={t("field.price")} aria-label={t("field.price")} required />
+          <Button type="submit" variant="secondary">{t("menu.addItem")}</Button>
+        </div>
       </form>
     </section>
   );
@@ -476,7 +498,7 @@ function StaffPanel({ venueId }: { venueId: number }) {
   return (
     <div className="space-y-4">
       <form onSubmit={(event) => void save(event)} className="space-y-3 rounded-lg border border-line bg-paper p-4">
-        <Field label="Email naloga">
+        <Field label={t("staff.email")}>
           <input className={inputClass} type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="ime@email.com" required />
         </Field>
         <div className="flex flex-wrap gap-4 text-sm">
@@ -491,7 +513,7 @@ function StaffPanel({ venueId }: { venueId: number }) {
             </label>
           ))}
         </div>
-        <Button type="submit" disabled={roles.length === 0}>Dodaj osoblje</Button>
+        <Button type="submit" disabled={roles.length === 0}>{t("staff.add")}</Button>
       </form>
       {loading ? <FieldSkeleton /> : null}
       {!loading ? (

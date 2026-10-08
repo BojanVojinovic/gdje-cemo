@@ -1,6 +1,7 @@
 "use client";
 
 import { ComboBox } from "@/components/combo-box";
+import { useI18n } from "@/components/i18n-provider";
 import { UserTableSkeleton } from "@/components/skeletons";
 import { Button, EmptyState, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
@@ -10,6 +11,7 @@ import { useEffect, useState } from "react";
 
 export default function AdminUsersPage() {
   const { token } = useAuth();
+  const { t } = useI18n();
   const toast = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [meta, setMeta] = useState<PageMeta | null>(null);
@@ -56,8 +58,8 @@ export default function AdminUsersPage() {
     <div className="space-y-4">
       <h1 className="font-serif text-4xl">Korisnici</h1>
       <form className="flex gap-2" onSubmit={(event) => { event.preventDefault(); void load(); }}>
-        <input className={inputClass} value={q} onChange={(event) => setQ(event.target.value)} placeholder="Ime ili email" />
-        <Button type="submit" variant="secondary">Traži</Button>
+        <input className={inputClass} value={q} onChange={(event) => setQ(event.target.value)} placeholder={t("field.searchUsers")} />
+        <Button type="submit" variant="secondary">{t("action.search")}</Button>
       </form>
       <div className="flex gap-2">
         <Button variant="secondary" onClick={() => bulk("disable")}>Onemogući označene</Button>
@@ -84,7 +86,7 @@ export default function AdminUsersPage() {
                 <td className="p-3">{user.is_active ? "aktivan" : "isključen"}</td>
                 <td className="p-3 text-right">
                   <button type="button" className="mr-3" onClick={() => update(user, { is_active: !user.is_active })}>{user.is_active ? "Onemogući" : "Uključi"}</button>
-                  <button type="button" className="text-coral" onClick={() => remove(user)}>Obriši</button>
+                  <button type="button" className="text-coral" onClick={() => remove(user)}>{t("action.delete")}</button>
                 </td>
               </tr>
             ))}

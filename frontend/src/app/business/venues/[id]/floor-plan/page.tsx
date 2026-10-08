@@ -1,6 +1,7 @@
 "use client";
 
 import { ComboBox } from "@/components/combo-box";
+import { useI18n } from "@/components/i18n-provider";
 import { FloorCanvas, TableLegend } from "@/components/floor-canvas";
 import { FloorEditorSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
@@ -17,6 +18,7 @@ const statuses = ["available", "reserved", "occupied", "ordering", "unavailable"
 export default function FloorPlanEditorPage() {
   const params = useParams<{ id: string }>();
   const { token } = useAuth();
+  const { t } = useI18n();
   const toast = useToast();
   const [plan, setPlan] = useState<FloorPlanPayload | null>(null);
   const [tables, setTables] = useState<FloorTable[]>([]);
@@ -133,7 +135,7 @@ export default function FloorPlanEditorPage() {
         <div className="flex flex-wrap gap-2">
           <Link href={`/business/venues/${params.id}/tables`} className="text-sm text-sea">Lista stolova</Link>
           <Button onClick={() => void addTable("square")}>Novi sto</Button>
-          <Button variant="secondary" onClick={() => void saveLayout()} disabled={!tables.length}>Sačuvaj raspored</Button>
+          <Button variant="secondary" onClick={() => void saveLayout()} disabled={!tables.length}>{t("action.save")}</Button>
         </div>
       </div>
       <TableLegend />
@@ -194,10 +196,10 @@ export default function FloorPlanEditorPage() {
                 })}
               </fieldset>
               <div className="flex flex-wrap gap-2">
-                <Button onClick={() => void saveTable()}>Sačuvaj sto</Button>
+                <Button onClick={() => void saveTable()}>{t("action.save")}</Button>
                 <Button variant="secondary" onClick={() => patchLocal({ ...selected, rotation: (selected.rotation + 15) % 360 })}>Rotiraj</Button>
                 <Button variant="secondary" onClick={async () => { if (!token) return; await api(`/business/tables/${selected.id}/duplicate`, { method: "POST", token }); await load(); }}>Dupliraj</Button>
-                <Button variant="danger" onClick={async () => { if (!token) return; await api(`/business/tables/${selected.id}`, { method: "DELETE", token }); setSelectedId(null); await load(); }}>Obriši</Button>
+                <Button variant="danger" onClick={async () => { if (!token) return; await api(`/business/tables/${selected.id}`, { method: "DELETE", token }); setSelectedId(null); await load(); }}>{t("action.delete")}</Button>
               </div>
               {selected.qr_token ? <Link href={`/table/${selected.qr_token}`} className="block text-sm text-sea">Otvori QR narudžbinu</Link> : null}
               <Button variant="ghost" onClick={async () => { if (!token) return; await api(`/business/tables/${selected.id}/qr`, { method: "POST", token }); toast("QR kod je osvježen."); await load(); }}>Novi QR</Button>
@@ -213,12 +215,12 @@ export default function FloorPlanEditorPage() {
             {plan.zones.map((zone) => (
               <li key={zone.id} className="flex items-center justify-between gap-2">
                 <span>{zone.name}</span>
-                <button type="button" className="text-coral" onClick={async () => { if (!token) return; await api(`/business/zones/${zone.id}`, { method: "DELETE", token }); await load(); }}>Obriši</button>
+                <button type="button" className="text-coral" onClick={async () => { if (!token) return; await api(`/business/zones/${zone.id}`, { method: "DELETE", token }); await load(); }}>{t("action.delete")}</button>
               </li>
             ))}
           </ul>
           <Field label="Nova zona"><input className={inputClass} value={zoneName} onChange={(event) => setZoneName(event.target.value)} /></Field>
-          <Button type="submit">Dodaj zonu</Button>
+          <Button type="submit">{t("action.add")}</Button>
         </form>
         <form onSubmit={saveSettings} className="space-y-3 rounded-lg border border-line p-4">
           <h2 className="font-serif text-2xl">Rezervacije</h2>
@@ -237,7 +239,7 @@ export default function FloorPlanEditorPage() {
             <Field label="Maks. gostiju"><input name="max_party_size" type="number" className={inputClass} defaultValue={plan.settings.max_party_size} /></Field>
             <Field label="Rok otkaza (min)"><input name="cancellation_deadline_minutes" type="number" className={inputClass} defaultValue={plan.settings.cancellation_deadline_minutes} /></Field>
           </div>
-          <Button type="submit">Sačuvaj podešavanja</Button>
+          <Button type="submit">{t("action.save")}</Button>
         </form>
       </section>
 
@@ -255,14 +257,14 @@ export default function FloorPlanEditorPage() {
             {plan.closures.map((row) => (
               <li key={row.id} className="flex justify-between gap-2">
                 <span>{row.reason}</span>
-                <button type="button" className="text-coral" onClick={async () => { if (!token) return; await api(`/business/closures/${row.id}`, { method: "DELETE", token }); await load(); }}>Obriši</button>
+                <button type="button" className="text-coral" onClick={async () => { if (!token) return; await api(`/business/closures/${row.id}`, { method: "DELETE", token }); await load(); }}>{t("action.delete")}</button>
               </li>
             ))}
           </ul>
           <Field label="Od"><input required type="datetime-local" className={inputClass} value={closure.starts_at} onChange={(event) => setClosure({ ...closure, starts_at: event.target.value })} /></Field>
           <Field label="Do"><input required type="datetime-local" className={inputClass} value={closure.ends_at} onChange={(event) => setClosure({ ...closure, ends_at: event.target.value })} /></Field>
           <Field label="Razlog"><input required className={inputClass} value={closure.reason} onChange={(event) => setClosure({ ...closure, reason: event.target.value })} /></Field>
-          <Button type="submit">Dodaj zatvaranje</Button>
+          <Button type="submit">{t("action.add")}</Button>
         </form>
         <div className="space-y-3 rounded-lg border border-line p-4">
           <h2 className="font-serif text-2xl">Pozadina</h2>
@@ -280,6 +282,7 @@ export default function FloorPlanEditorPage() {
 
 function CombinationForm({ venueId, tables, onSaved }: { venueId: string; tables: FloorTable[]; onSaved: () => Promise<void> }) {
   const { token } = useAuth();
+  const { t } = useI18n();
   const toast = useToast();
   const [name, setName] = useState("");
   const [ids, setIds] = useState<number[]>([]);
@@ -305,13 +308,13 @@ function CombinationForm({ venueId, tables, onSaved }: { venueId: string; tables
       await onSaved();
     }}>
       <h3 className="font-medium">Spojeni stolovi</h3>
-      <input aria-label="Naziv kombinacije" className={inputClass} placeholder="T4 + T5" value={name} onChange={(event) => setName(event.target.value)} />
+      <input aria-label={t("field.name")} className={inputClass} placeholder="T4 + T5" value={name} onChange={(event) => setName(event.target.value)} />
       <div className="flex flex-wrap gap-2">
         {tables.map((table) => (
           <label key={table.id} className="text-sm"><input type="checkbox" checked={ids.includes(table.id)} onChange={(event) => setIds(event.target.checked ? [...ids, table.id] : ids.filter((id) => id !== table.id))} /> {table.name}</label>
         ))}
       </div>
-      <Button type="submit" variant="secondary">Sačuvaj kombinaciju</Button>
+      <Button type="submit" variant="secondary">{t("action.save")}</Button>
     </form>
   );
 }

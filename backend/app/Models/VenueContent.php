@@ -18,7 +18,7 @@ class VenueContent extends Model
         'venue_id', 'author_id', 'type', 'title', 'slug', 'body', 'cover_path', 'video_url', 'status', 'priority',
         'scheduled_at', 'published_at', 'expires_at', 'event_start_at', 'event_end_at', 'event_category', 'price',
         'capacity', 'registration_mode', 'organizer', 'blocks_reservations', 'valid_from', 'valid_until',
-        'daily_start', 'daily_end', 'days_of_week', 'terms',
+        'daily_start', 'daily_end', 'days_of_week', 'terms', 'translations',
     ];
 
     protected function casts(): array
@@ -38,6 +38,7 @@ class VenueContent extends Model
             'valid_from' => 'datetime',
             'valid_until' => 'datetime',
             'days_of_week' => 'array',
+            'translations' => 'array',
         ];
     }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { ComboBox } from "@/components/combo-box";
+import { useI18n } from "@/components/i18n-provider";
 import { InfoListSkeleton } from "@/components/skeletons";
 import { Button, EmptyState, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
@@ -10,6 +11,7 @@ import { useEffect, useState } from "react";
 
 export default function AdminCategoriesPage() {
   const { token } = useAuth();
+  const { t } = useI18n();
   const toast = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [name, setName] = useState("");
@@ -65,7 +67,7 @@ export default function AdminCategoriesPage() {
         <Field label="Roditelj">
           <ComboBox value={parentId} onChange={setParentId} options={[{ value: "", label: "Glavna kategorija" }, ...categories.map((category) => ({ value: String(category.id), label: category.name }))]} />
         </Field>
-        <div className="self-end"><Button type="submit">Dodaj</Button></div>
+        <div className="self-end"><Button type="submit">{t("action.add")}</Button></div>
       </form>
       {loading ? <InfoListSkeleton /> : null}
       {!loading && categories.length === 0 ? <EmptyState title="Nema kategorija." body="Dodajte prvu kategoriju." /> : null}
@@ -74,13 +76,13 @@ export default function AdminCategoriesPage() {
           <li key={category.id} className="rounded-lg border border-line bg-paper p-4">
             <div className="flex items-center justify-between gap-3">
               <input className={inputClass} defaultValue={category.name} onBlur={(event) => { if (event.target.value !== category.name) void rename(category, event.target.value); }} />
-              <button type="button" className="text-sm text-coral" onClick={() => remove(category)}>Obriši</button>
+              <button type="button" className="text-sm text-coral" onClick={() => remove(category)}>{t("action.delete")}</button>
             </div>
             <ul className="mt-2 space-y-2">
               {category.children?.map((child) => (
                 <li key={child.id} className="flex items-center gap-2 pl-4">
                   <input className={inputClass} defaultValue={child.name} onBlur={(event) => { if (event.target.value !== child.name) void rename(child, event.target.value); }} />
-                  <button type="button" className="text-sm text-coral" onClick={() => remove(child)}>Obriši</button>
+                  <button type="button" className="text-sm text-coral" onClick={() => remove(child)}>{t("action.delete")}</button>
                 </li>
               ))}
             </ul>

@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Services\ImageService;
 use App\Services\OpeningHoursService;
+use App\Support\ContentLocales;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,13 +27,20 @@ class VenueResource extends JsonResource
     public function toArray(Request $request): array
     {
         $hours = app(OpeningHoursService::class);
+        $locale = ContentLocales::fromRequest($request);
+        $description = ContentLocales::text($this->description, $this->translations, 'description', $locale);
 
         return [
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
-            'description' => $this->description,
-            'excerpt' => mb_strimwidth(trim(preg_replace('/\s+/', ' ', (string) $this->description)), 0, 180, '…'),
+            'description' => $description,
+            'excerpt' => mb_strimwidth(trim(preg_replace('/\s+/', ' ', (string) $description)), 0, 180, '…'),
+            'source' => [
+                'description' => $this->description,
+                'tagline' => $this->tagline,
+            ],
+            'translations' => $this->translations ?: (object) [],
             'category' => new CategoryResource($this->whenLoaded('category')),
             'subcategory' => new CategoryResource($this->whenLoaded('subcategory')),
             'address' => $this->address,
@@ -53,7 +61,7 @@ class VenueResource extends JsonResource
             'cover_url' => ImageService::url($this->cover_path),
             'thumb_url' => ImageService::url($this->cover_thumb_path ?: $this->cover_path),
             'logo_url' => ImageService::url($this->logo_path),
-            'tagline' => $this->tagline,
+            'tagline' => ContentLocales::text($this->tagline, $this->translations, 'tagline', $locale),
             'brand_color' => $this->brand_color,
             'brand_ink' => self::ink($this->brand_color),
             'rating_avg' => round((float) $this->rating_avg, 2),

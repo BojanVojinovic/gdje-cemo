@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { InfoListSkeleton } from "@/components/skeletons";
 import { Button, EmptyState, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -10,6 +11,7 @@ import { useEffect, useState } from "react";
 
 export default function AdminReviewsPage() {
   const { token } = useAuth();
+  const { t } = useI18n();
   const toast = useToast();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
@@ -54,7 +56,7 @@ export default function AdminReviewsPage() {
       <div className="flex gap-2">
         <Button variant="secondary" onClick={() => bulk("hide")}>Sakrij</Button>
         <Button variant="secondary" onClick={() => bulk("publish")}>Objavi</Button>
-        <Button variant="danger" onClick={() => bulk("delete")}>Obriši</Button>
+        <Button variant="danger" onClick={() => bulk("delete")}>{t("action.delete")}</Button>
       </div>
       {loading ? <InfoListSkeleton /> : null}
       {!loading && reviews.length === 0 ? <EmptyState title="Nema recenzija." body="Kad korisnici ostave utiske, pojaviće se ovdje." /> : null}
@@ -70,7 +72,7 @@ export default function AdminReviewsPage() {
             </label>
             <div className="mt-3 flex gap-3">
               <button type="button" onClick={() => moderate(review, review.status === "hidden" ? "published" : "hidden")}>{review.status === "hidden" ? "Objavi" : "Sakrij"}</button>
-              <button type="button" className="text-coral" onClick={() => remove(review)}>Obriši</button>
+              <button type="button" className="text-coral" onClick={() => remove(review)}>{t("action.delete")}</button>
             </div>
           </li>
         ))}

@@ -73,6 +73,8 @@ export type VenueContentItem = {
   daily_end: string | null;
   days_of_week: number[] | null;
   terms: string | null;
+  source?: { title?: string; body?: string | null; terms?: string | null; event_category?: string | null };
+  translations?: Record<string, Record<string, string>>;
   venue?: { id: number; name: string; slug: string; city: string } | null;
 };
 

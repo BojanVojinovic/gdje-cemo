@@ -18,23 +18,19 @@ export default async function HomePage() {
   let events: VenueContentItem[] = [];
   let error = false;
 
-  try {
-    home = (await api<HomePayload>("/home")).data;
-  } catch {
-    error = true;
-  }
-
-  try {
-    events = (await api<VenueContentItem[]>("/events?upcoming=1&sort=date")).data.slice(0, 3);
-  } catch {
-    events = [];
-  }
+  const [homeResult, eventsResult] = await Promise.all([
+    api<HomePayload>("/home", { locale }).then((result) => result.data).catch(() => null),
+    api<VenueContentItem[]>("/events?upcoming=1&sort=date", { locale }).then((result) => result.data.slice(0, 3)).catch(() => []),
+  ]);
+  home = homeResult;
+  events = eventsResult;
+  error = home === null;
 
   const hero = home?.featured[0];
 
   return (
     <div>
-      <section className="tech-glow relative overflow-hidden border-b border-line bg-void text-snow">
+      <section className="tech-glow relative overflow-hidden border-b border-line bg-void text-ink">
         <div className="mx-auto grid max-w-6xl items-stretch gap-4 px-4 py-8 md:grid-cols-[0.92fr_1.08fr] md:py-12">
           <div className="flex min-h-80 flex-col justify-between rounded-[1.75rem] bg-gradient-to-br from-[#5b8cff] via-[#3b6cff] to-[#16348f] p-7 sm:p-10">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/75">{t("home.country")}</p>
@@ -62,7 +58,7 @@ export default async function HomePage() {
             <div className="min-h-80 rounded-[1.75rem] bg-black" />
           )}
         </div>
-        <p className="mx-auto max-w-6xl px-4 pb-8 font-serif text-3xl leading-tight text-snow sm:text-4xl">
+        <p className="mx-auto max-w-6xl px-4 pb-8 font-serif text-3xl leading-tight text-ink sm:text-4xl">
           {t("home.line")}
         </p>
         <div id="pretraga" className="mx-auto max-w-6xl scroll-mt-24 px-4 pb-12">
@@ -79,7 +75,7 @@ export default async function HomePage() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {(home?.categories ?? []).map((category) => (
               <Link key={category.id} href={`/places?category=${category.slug}`} className="rounded-2xl border border-line bg-paper px-4 py-5 transition hover:border-sea hover:bg-sea/10">
-                <span className="block font-serif text-2xl">{category.name}</span>
+                <span className="block font-serif text-2xl">{category.label || category.name}</span>
               </Link>
             ))}
           </div>
@@ -88,12 +84,12 @@ export default async function HomePage() {
         {home?.promotions?.length ? (
           <section className="grid gap-4 md:grid-cols-2">
             {home.promotions.map((promotion) => (
-              <Link key={promotion.id} href={promotion.link_url || "/places"} className="relative min-h-44 overflow-hidden rounded-[1.25rem] bg-void text-snow">
-                {promotion.image_url ? <img src={promotion.image_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-60" /> : null}
+              <Link key={promotion.id} href={promotion.link_url || "/places"} className="relative min-h-44 overflow-hidden rounded-[1.25rem] bg-void text-ink">
+                {promotion.image_url ? <img src={promotion.image_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" /> : null}
                 <div className="relative p-6">
-                  <p className="text-xs uppercase tracking-[0.16em] text-snow/70">{t("home.featuredPromo")}</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-ink/70">{t("home.featuredPromo")}</p>
                   <h2 className="mt-2 font-serif text-3xl">{promotion.title}</h2>
-                  {promotion.subtitle ? <p className="mt-2 max-w-md text-sm text-snow/80">{promotion.subtitle}</p> : null}
+                  {promotion.subtitle ? <p className="mt-2 max-w-md text-sm text-ink/80">{promotion.subtitle}</p> : null}
                 </div>
               </Link>
             ))}
@@ -112,7 +108,7 @@ export default async function HomePage() {
               {events.map((event) => (
                 <Link key={event.id} href={`/events/${event.slug}`} className="overflow-hidden rounded-[1.25rem] border border-line bg-paper">
                   <div className="aspect-[16/10] bg-void">
-                    {event.cover_url ? <img src={event.cover_url} alt="" className="h-full w-full object-cover" /> : <div className="flex h-full items-end p-4 font-serif text-2xl text-snow">{event.event_category || t("home.eventFallback")}</div>}
+                    {event.cover_url ? <img src={event.cover_url} alt="" className="h-full w-full object-cover" /> : <div className="flex h-full items-end p-4 font-serif text-2xl text-ink">{event.event_category || t("home.eventFallback")}</div>}
                   </div>
                   <div className="space-y-1 p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sea">{when(event.event_start_at)}</p>

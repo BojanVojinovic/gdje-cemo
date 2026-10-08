@@ -57,6 +57,9 @@ class UpdateVenueRequest extends FormRequest
             'delivery_eta_minutes' => ['required_if:offers_delivery,true,1', 'nullable', 'integer', 'min:5', 'max:180'],
             'tagline' => ['sometimes', 'nullable', 'string', 'max:160'],
             'brand_color' => ['sometimes', 'nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'translations' => ['sometimes', 'nullable', 'array'],
+            'translations.*.description' => ['nullable', 'string', 'max:5000'],
+            'translations.*.tagline' => ['nullable', 'string', 'max:160'],
             'featured_until' => ['nullable', 'date'],
         ];
     }

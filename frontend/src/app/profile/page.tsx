@@ -156,7 +156,7 @@ export default function ProfilePage() {
         <Field label="Korisničko ime" error={errors.username}><input className={inputClass} value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} /></Field>
         <Field label="Email" error={errors.email}><input className={inputClass} type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></Field>
         <Field label="Telefon" error={errors.phone}><input className={inputClass} value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /></Field>
-        <Button type="submit" loading={loading}>Sačuvaj profil</Button>
+        <Button type="submit" loading={loading}>{t("action.save")}</Button>
       </form>
       <form onSubmit={savePassword} className="space-y-3 rounded-lg border border-line bg-paper p-5">
         <h2 className="font-serif text-2xl">Lozinka</h2>
@@ -180,7 +180,7 @@ export default function ProfilePage() {
                 <p className="mt-1 text-sm">{review.body}</p>
                 <div className="mt-3 flex gap-2">
                   <Button variant="secondary" onClick={() => setEditing(review)}>Izmijeni</Button>
-                  <Button variant="ghost" onClick={() => void removeReview(review)}>Obriši</Button>
+                  <Button variant="ghost" onClick={() => void removeReview(review)}>{t("action.delete")}</Button>
                 </div>
               </li>
             ))}

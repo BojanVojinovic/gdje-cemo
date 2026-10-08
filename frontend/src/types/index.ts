@@ -4,6 +4,7 @@ export type Category = {
   id: number;
   parent_id: number | null;
   name: string;
+  label?: string;
   slug: string;
   icon: string | null;
   sort_order: number;
@@ -13,6 +14,7 @@ export type Category = {
 export type Amenity = {
   id: number;
   name: string;
+  label?: string;
   slug: string;
   icon: string | null;
 };
@@ -38,6 +40,9 @@ export type MenuItem = {
   id: number;
   name: string;
   description: string | null;
+  source_name?: string;
+  source_description?: string | null;
+  translations?: Record<string, Record<string, string>>;
   price: number;
   image_url: string | null;
   is_available: boolean;
@@ -48,6 +53,8 @@ export type MenuItem = {
 export type MenuCategory = {
   id: number;
   name: string;
+  source_name?: string;
+  translations?: Record<string, Record<string, string>>;
   station?: "kitchen" | "bar";
   sort_order: number;
   items?: MenuItem[];
@@ -83,6 +90,8 @@ export type Venue = {
   thumb_url: string | null;
   logo_url?: string | null;
   tagline?: string | null;
+  source?: { description?: string; tagline?: string | null };
+  translations?: Record<string, Record<string, string>>;
   brand_color?: string | null;
   brand_ink?: string | null;
   rating_avg: number;

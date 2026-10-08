@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { SettingsFormSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
@@ -9,6 +10,7 @@ import { useEffect, useState } from "react";
 
 export default function AdminSettingsPage() {
   const { token } = useAuth();
+  const { t } = useI18n();
   const toast = useToast();
   const [settings, setSettings] = useState({ site_name: "", tagline: "", support_email: "", default_city: "" });
   const [promotions, setPromotions] = useState<Promotion[]>([]);
@@ -69,21 +71,21 @@ export default function AdminSettingsPage() {
         <Field label="Rečenica"><input className={inputClass} value={settings.tagline} onChange={(event) => setSettings({ ...settings, tagline: event.target.value })} /></Field>
         <Field label="Email podrške"><input className={inputClass} type="email" value={settings.support_email} onChange={(event) => setSettings({ ...settings, support_email: event.target.value })} /></Field>
         <Field label="Podrazumijevani grad"><input className={inputClass} value={settings.default_city} onChange={(event) => setSettings({ ...settings, default_city: event.target.value })} /></Field>
-        <Button type="submit">Sačuvaj</Button>
+        <Button type="submit">{t("action.save")}</Button>
       </form>}
       {!loading ? <section className="space-y-3">
         <h2 className="font-serif text-2xl">Istaknuti sadržaj</h2>
         <form onSubmit={addPromotion} className="grid gap-2 md:grid-cols-3">
-          <input className={inputClass} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Naslov" required />
-          <input className={inputClass} value={subtitle} onChange={(event) => setSubtitle(event.target.value)} placeholder="Podnaslov" />
+          <input className={inputClass} value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t("content.title")} required />
+          <input className={inputClass} value={subtitle} onChange={(event) => setSubtitle(event.target.value)} placeholder={t("field.subtitle")} />
           <input className={inputClass} value={link} onChange={(event) => setLink(event.target.value)} placeholder="/venue/konoba-galeb" />
-          <Button type="submit">Dodaj</Button>
+          <Button type="submit">{t("action.add")}</Button>
         </form>
         <ul className="space-y-2">
           {promotions.map((promotion) => (
             <li key={promotion.id} className="flex items-center justify-between rounded-2xl bg-paper px-4 py-3 text-sm">
               <span>{promotion.title}</span>
-              <button type="button" className="text-coral" onClick={() => remove(promotion)}>Obriši</button>
+              <button type="button" className="text-coral" onClick={() => remove(promotion)}>{t("action.delete")}</button>
             </li>
           ))}
         </ul>

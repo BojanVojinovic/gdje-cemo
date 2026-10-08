@@ -30,10 +30,11 @@ class VenueQueryService
             ->published()
             ->when($city !== '', fn (Builder $query) => $query->where('venues.city', $city));
 
-        $featured = (clone $base)->reorder()->featuredActive()->orderByDesc('venues.rating_avg')->limit(6)->get();
-        $popular = (clone $base)->reorder()->orderByDesc('venues.profile_views')->orderByDesc('venues.rating_avg')->limit(8)->get();
-        $recent = (clone $base)->reorder()->latest('venues.created_at')->limit(8)->get();
-        $topRated = (clone $base)->reorder()
+        $lean = (clone $base)->setEagerLoads([]);
+        $featured = (clone $lean)->reorder()->featuredActive()->orderByDesc('venues.rating_avg')->limit(6)->get();
+        $popular = (clone $lean)->reorder()->orderByDesc('venues.profile_views')->orderByDesc('venues.rating_avg')->limit(8)->get();
+        $recent = (clone $lean)->reorder()->latest('venues.created_at')->limit(8)->get();
+        $topRated = (clone $lean)->reorder()
             ->where('venues.reviews_count', '>', 0)
             ->orderByDesc('venues.rating_avg')
             ->orderByDesc('venues.reviews_count')
@@ -48,6 +49,15 @@ class VenueQueryService
                 'city' => null,
             ]));
             $nearby = $this->publicList($nearbyRequest)->limit(8)->get();
+        }
+
+        $shared = $featured->concat($popular)->concat($recent)->concat($topRated);
+        if ($shared->isNotEmpty()) {
+            $shared->load([
+                'category:id,name,slug,icon,parent_id,translations',
+                'subcategory:id,name,slug,icon,parent_id,translations',
+                'openingHours',
+            ]);
         }
 
         return compact('featured', 'popular', 'recent', 'topRated', 'nearby');
@@ -73,8 +83,8 @@ class VenueQueryService
     private function base(Request $request): Builder
     {
         $query = Venue::query()->select('venues.*')->with([
-            'category:id,name,slug,icon,parent_id',
-            'subcategory:id,name,slug,icon,parent_id',
+            'category:id,name,slug,icon,parent_id,translations',
+            'subcategory:id,name,slug,icon,parent_id,translations',
             'openingHours',
         ]);
 

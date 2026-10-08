@@ -13,6 +13,7 @@ use App\Services\ContentService;
 use App\Services\ImageService;
 use App\Services\SlugService;
 use App\Support\ApiResponse;
+use App\Support\ContentLocales;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -152,7 +153,7 @@ class ContentController extends Controller
 
     public function store(Request $request, SlugService $slugs, ImageService $images, ContentService $service, AuditService $audit): JsonResponse
     {
-        $data = $this->validated($request);
+        $data = $this->withCopy($this->validated($request));
         $venue = Venue::query()->findOrFail($data['venue_id']);
         $this->authorize('update', $venue);
         if ($venue->publishing_suspended && ($data['status'] ?? 'draft') !== 'draft') {
@@ -176,7 +177,7 @@ class ContentController extends Controller
     public function update(Request $request, VenueContent $content, SlugService $slugs, ImageService $images, ContentService $service, AuditService $audit): JsonResponse
     {
         $this->authorize('update', $content->venue);
-        $data = $this->validated($request, partial: true);
+        $data = $this->withCopy($this->validated($request, partial: true), $content->translations);
         if (isset($data['title'])) {
             $data['slug'] = $slugs->unique($data['title'], VenueContent::class, $content->id);
         }
@@ -301,7 +302,24 @@ class ContentController extends Controller
             'days_of_week' => ['nullable', 'array'],
             'days_of_week.*' => ['integer', 'between:1,7'],
             'terms' => ['nullable', 'string', 'max:2000'],
+            'translations' => ['sometimes', 'array'],
+            'translations.*.title' => ['nullable', 'string', 'max:160'],
+            'translations.*.body' => ['nullable', 'string', 'max:8000'],
+            'translations.*.terms' => ['nullable', 'string', 'max:2000'],
+            'translations.*.event_category' => ['nullable', 'string', 'max:80'],
         ]);
+    }
+
+    private function withCopy(array $data, ?array $existing = null): array
+    {
+        if (! array_key_exists('translations', $data)) {
+            return $data;
+        }
+
+        $merged = ContentLocales::merge($existing, $data['translations'], ['title', 'body', 'terms', 'event_category']);
+        $data['translations'] = $merged === [] ? null : $merged;
+
+        return $data;
     }
 
     private function cover(Request $request, VenueContent $content, ImageService $images): void

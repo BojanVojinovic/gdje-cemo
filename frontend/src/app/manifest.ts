@@ -1,9 +1,10 @@
+import { brandName } from "@/lib/brand-name";
 import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Gdje ćemo",
-    short_name: "Gdje ćemo",
+    name: brandName,
+    short_name: brandName,
     description: "Find restaurants, cafés, bars and clubs in Montenegro.",
     start_url: "/",
     scope: "/",

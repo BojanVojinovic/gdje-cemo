@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { ReservationListSkeleton } from "@/components/skeletons";
 import { Button, EmptyState, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
@@ -22,6 +23,7 @@ type ReservationRow = {
 
 export default function MyReservationsPage() {
   const { token, user, ready } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const toast = useToast();
   const [rows, setRows] = useState<ReservationRow[]>([]);
@@ -67,7 +69,7 @@ export default function MyReservationsPage() {
             <p className="text-sm">{when(row.start_at)} – {when(row.end_at)}</p>
             <p className="text-sm text-muted">{row.table_name}{row.zone_name ? ` · ${row.zone_name}` : ""} · {row.party_size} gostiju · {reservationStatusLabel[row.status] ?? row.status}</p>
             {row.venue ? <Link href={`/venue/${row.venue.slug}`} className="text-sm text-sea">Mjesto</Link> : null}
-            {row.status === "pending" || row.status === "confirmed" ? <Button className="mt-3" variant="secondary" onClick={() => void cancel(row.id)}>Otkaži</Button> : null}
+            {row.status === "pending" || row.status === "confirmed" ? <Button className="mt-3" variant="secondary" onClick={() => void cancel(row.id)}>{t("action.cancel")}</Button> : null}
           </li>
         ))}
       </ul> : null}

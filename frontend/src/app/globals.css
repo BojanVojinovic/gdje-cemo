@@ -19,6 +19,26 @@
   --shadow-card: 0 16px 40px rgb(0 0 0 / 0.28);
 }
 
+:root {
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --color-ink: #161a22;
+    --color-cream: #f3f5f9;
+    --color-paper: #ffffff;
+    --color-void: #e8edf4;
+    --color-line: #d5dce6;
+    --color-muted: #5c6b82;
+    --color-sea: #2f5fe0;
+    --color-sea-deep: #244ec4;
+    --shadow-card: 0 12px 32px rgb(22 26 34 / 0.08);
+  }
+
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -66,4 +86,10 @@ h1, h2, .font-serif {
   width: 100%;
   font-family: inherit;
   background: #101722;
+}
+
+@media (prefers-color-scheme: light) {
+  .leaflet-container {
+    background: #e8edf4;
+  }
 }

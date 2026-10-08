@@ -1,6 +1,7 @@
 "use client";
 
 import { ComboBox } from "@/components/combo-box";
+import { useI18n } from "@/components/i18n-provider";
 import { ReviewListSkeleton } from "@/components/skeletons";
 import { Button, EmptyState, Field, Modal, Stars, inputClass, useToast } from "@/components/ui";
 import { api, ApiError, fieldError } from "@/lib/api";
@@ -22,6 +23,7 @@ export function ReviewSection({
   count: number;
 }) {
   const { token, user } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const toast = useToast();
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -99,7 +101,7 @@ export function ReviewSection({
               </div>
             </div>
           ))}
-          <p className="text-sm text-muted">{count} recenzija</p>
+          <p className="text-sm text-muted">{count} {t("venue.reviews")}</p>
         </div>
       </div>
 
@@ -108,7 +110,7 @@ export function ReviewSection({
           <ComboBox value={String(rating)} onChange={(value) => setRating(Number(value))} options={[5, 4, 3, 2, 1].map((score) => ({ value: String(score), label: String(score) }))} />
         </Field>
         <Field label="Utisak" error={error ?? undefined}>
-          <textarea className={inputClass + " min-h-28 py-3"} value={body} onChange={(event) => setBody(event.target.value)} placeholder="Šta vrijedi znati prije dolaska?" />
+          <textarea className={inputClass + " min-h-28 py-3"} value={body} onChange={(event) => setBody(event.target.value)} placeholder={t("review.hint")} />
         </Field>
         <Button type="submit" loading={submitting}>Objavi recenziju</Button>
       </form>
@@ -135,7 +137,7 @@ export function ReviewSection({
             {review.can_edit ? (
               <div className="mt-3 flex gap-2">
                 <Button variant="secondary" onClick={() => setEditing(review)}>Izmijeni</Button>
-                <Button variant="ghost" onClick={() => remove(review)}>Obriši</Button>
+                <Button variant="ghost" onClick={() => remove(review)}>{t("action.delete")}</Button>
               </div>
             ) : null}
             <div className="mt-2">
@@ -161,6 +163,7 @@ function ReportControl({ reviewId }: { reviewId: number }) {
 
 export function EditReviewModal({ review, onClose, onSaved }: { review: Review | null; onClose: () => void; onSaved: () => void }) {
   const { token } = useAuth();
+  const { t } = useI18n();
   const toast = useToast();
   const [rating, setRating] = useState(review?.rating ?? 5);
   const [body, setBody] = useState(review?.body ?? "");
@@ -191,7 +194,7 @@ export function EditReviewModal({ review, onClose, onSaved }: { review: Review |
       <form onSubmit={save} className="space-y-3">
         <Field label="Ocjena"><ComboBox value={String(rating)} onChange={(value) => setRating(Number(value))} options={[5, 4, 3, 2, 1].map((score) => ({ value: String(score), label: String(score) }))} /></Field>
         <Field label="Tekst"><textarea className={inputClass + " min-h-28 py-3"} value={body} onChange={(event) => setBody(event.target.value)} /></Field>
-        <Button type="submit" loading={loading}>Sačuvaj</Button>
+        <Button type="submit" loading={loading}>{t("action.save")}</Button>
       </form>
     </Modal>
   );

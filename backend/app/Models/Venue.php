@@ -51,6 +51,7 @@ class Venue extends Model
         'profile_views',
         'menu_views',
         'publishing_suspended',
+        'translations',
     ];
 
     protected function casts(): array
@@ -67,6 +68,7 @@ class Venue extends Model
             'profile_views' => 'integer',
             'menu_views' => 'integer',
             'publishing_suspended' => 'boolean',
+            'translations' => 'array',
             'status' => VenueStatus::class,
             'verification_status' => VerificationStatus::class,
         ];

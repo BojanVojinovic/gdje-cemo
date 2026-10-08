@@ -4,19 +4,21 @@ import { cookies } from "next/headers";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { SiteFooter, SiteHeader } from "@/components/shell";
+import { brandName } from "@/lib/brand-name";
 import { normalizeLocale } from "@/lib/i18n";
 
-const source = Source_Sans_3({ subsets: ["latin", "latin-ext"], variable: "--font-source" });
+const source = Source_Sans_3({ subsets: ["latin", "latin-ext", "cyrillic", "cyrillic-ext"], variable: "--font-source" });
 const fraunces = Fraunces({ subsets: ["latin", "latin-ext"], variable: "--font-fraunces" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
-  title: { default: "Gdje ćemo", template: "%s · Gdje ćemo" },
+  title: { default: brandName, template: `%s · ${brandName}` },
   description: "Find restaurants, cafés, bars and clubs in Montenegro.",
-  applicationName: "Gdje ćemo",
-  appleWebApp: { capable: true, title: "Gdje ćemo", statusBarStyle: "black-translucent" },
+  applicationName: brandName,
+  appleWebApp: { capable: true, title: brandName, statusBarStyle: "default" },
   icons: {
     icon: [
+      { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
@@ -25,7 +27,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#07090f",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f3f5f9" },
+    { media: "(prefers-color-scheme: dark)", color: "#07090f" },
+  ],
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

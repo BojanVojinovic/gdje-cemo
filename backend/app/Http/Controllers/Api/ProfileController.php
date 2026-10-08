@@ -9,6 +9,7 @@ use App\Http\Resources\ReviewResource;
 use App\Http\Resources\UserResource;
 use App\Services\ImageService;
 use App\Support\ApiResponse;
+use App\Support\ContentLocales;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -42,6 +43,18 @@ class ProfileController extends Controller
             new UserResource($user->load('role', 'businesses', 'staffAssignments.venue')),
             $emailChanged ? 'Profil je sačuvan. Potvrdite novu email adresu.' : 'Profil je sačuvan.'
         );
+    }
+
+    public function updateLocale(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'locale' => ['required', 'in:'.implode(',', ContentLocales::CODES)],
+        ]);
+        $user = $request->user();
+        $user->locale = $data['locale'];
+        $user->save();
+
+        return ApiResponse::success(new UserResource($user), null);
     }
 
     public function updatePassword(UpdatePasswordRequest $request): JsonResponse
