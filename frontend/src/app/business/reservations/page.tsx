@@ -7,7 +7,7 @@ import { InfoListSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { reservationStatusLabel, when, type FloorPlanPayload } from "@/lib/hospitality";
+import { when, type FloorPlanPayload } from "@/lib/hospitality";
 import type { Venue } from "@/types";
 import { useEffect, useState } from "react";
 
@@ -28,7 +28,7 @@ type ReservationRow = {
 
 export default function ReservationsPage() {
   const { token } = useAuth();
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const toast = useToast();
   const [rows, setRows] = useState<ReservationRow[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -72,26 +72,26 @@ export default function ReservationsPage() {
     if (!token) return;
     try {
       await api(`/business/reservations/${id}/status`, { method: "POST", token, body: { status } });
-      toast("Status rezervacije je sačuvan.");
+      toast(t("reserve.statusSaved"));
       await load();
     } catch (reason) {
-      toast(reason instanceof ApiError ? reason.message : "Status nije sačuvan.");
+      toast(reason instanceof ApiError ? reason.message : t("reserve.statusFailed"));
     }
   }
 
   return (
     <div className="space-y-4">
-      <h1 className="font-serif text-4xl">Rezervacije</h1>
+      <h1 className="font-serif text-4xl">{t("business.reservations")}</h1>
       <div className="flex flex-wrap gap-2">
         {(["list", "day", "floor"] as const).map((item) => (
           <button key={item} type="button" onClick={() => setView(item)} className={`min-h-11 rounded-full px-4 text-sm ${view === item ? "bg-sea text-snow" : "bg-paper"}`}>
-            {{ list: "Lista", day: "Dan", floor: "Tlocrt" }[item]}
+            {{ list: t("reserve.list"), day: t("reserve.day"), floor: t("venue.floor") }[item]}
           </button>
         ))}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Datum"><input type="date" className={inputClass} value={date} onChange={(event) => setDate(event.target.value)} /></Field>
-        <Field label="Mjesto">
+        <Field label={t("reserve.date")}><input type="date" className={inputClass} value={date} onChange={(event) => setDate(event.target.value)} /></Field>
+        <Field label={t("reserve.place")}>
           <ComboBox value={venueId ? String(venueId) : ""} onChange={(value) => setVenueId(Number(value))} options={venues.map((venue) => ({ value: String(venue.id), label: venue.name }))} />
         </Field>
       </div>
@@ -100,16 +100,16 @@ export default function ReservationsPage() {
       {loading ? <InfoListSkeleton /> : <ul className="space-y-3">
         {rows.map((row) => (
           <li key={row.id} className="rounded-lg border border-line bg-paper p-4">
-            <p className="font-medium">{when(row.start_at)} · {row.table_name} · {row.party_size} gostiju</p>
-            <p className="text-sm text-muted">{row.venue?.name} · {reservationStatusLabel[row.status] ?? row.status} · {row.source === "walk_in" ? "bez rezervacije" : "online"}{row.zone_name ? ` · ${row.zone_name}` : ""}</p>
+            <p className="font-medium">{when(row.start_at, locale)} · {row.table_name} · {row.party_size} {t("reserve.guestsWord")}</p>
+            <p className="text-sm text-muted">{row.venue?.name} · {t(`rsv.${row.status}`)} · {row.source === "walk_in" ? t("reserve.walkInLabel") : t("reserve.online")}{row.zone_name ? ` · ${row.zone_name}` : ""}</p>
             {row.guest_name ? <p className="text-sm">{row.guest_name}{row.guest_phone ? ` · ${row.guest_phone}` : ""}</p> : null}
             {row.notes ? <p className="text-sm text-muted">{row.notes}</p> : null}
             <div className="mt-3 flex flex-wrap gap-2">
-              {row.status === "pending" ? <Button onClick={() => void setStatus(row.id, "confirmed")}>Potvrdi</Button> : null}
-              {row.status === "pending" ? <Button variant="secondary" onClick={() => void setStatus(row.id, "rejected")}>Odbij</Button> : null}
-              {row.status === "confirmed" ? <Button onClick={() => void setStatus(row.id, "seated")}>Smjesti</Button> : null}
-              {row.status === "confirmed" || row.status === "seated" ? <Button variant="secondary" onClick={() => void setStatus(row.id, "no_show")}>Nije došao</Button> : null}
-              {row.status === "seated" ? <Button variant="secondary" onClick={() => void setStatus(row.id, "completed")}>Zatvori</Button> : null}
+              {row.status === "pending" ? <Button onClick={() => void setStatus(row.id, "confirmed")}>{t("reserve.confirm")}</Button> : null}
+              {row.status === "pending" ? <Button variant="secondary" onClick={() => void setStatus(row.id, "rejected")}>{t("reserve.reject")}</Button> : null}
+              {row.status === "confirmed" ? <Button onClick={() => void setStatus(row.id, "seated")}>{t("reserve.seat")}</Button> : null}
+              {row.status === "confirmed" || row.status === "seated" ? <Button variant="secondary" onClick={() => void setStatus(row.id, "no_show")}>{t("reserve.noShow")}</Button> : null}
+              {row.status === "seated" ? <Button variant="secondary" onClick={() => void setStatus(row.id, "completed")}>{t("reserve.close")}</Button> : null}
               {row.status === "pending" || row.status === "confirmed" ? <Button variant="ghost" onClick={() => void setStatus(row.id, "cancelled")}>{t("action.cancel")}</Button> : null}
             </div>
           </li>
@@ -117,10 +117,10 @@ export default function ReservationsPage() {
       </ul>}
       {!loading && view === "day" ? (
         <section className="space-y-2">
-          <h2 className="font-serif text-2xl">Raspored stolova</h2>
+          <h2 className="font-serif text-2xl">{t("reserve.schedule")}</h2>
           {(plan?.tables ?? []).map((table) => {
             const hit = rows.find((row) => row.table_name === table.name && ["pending", "confirmed", "seated"].includes(row.status));
-            return <p key={table.id} className="text-sm">{table.name} · {hit ? `${reservationStatusLabel[hit.status]} ${when(hit.start_at)}` : "Slobodan"}</p>;
+            return <p key={table.id} className="text-sm">{table.name} · {hit ? `${t(`rsv.${hit.status}`)} ${when(hit.start_at, locale)}` : t("reserve.free")}</p>;
           })}
         </section>
       ) : null}
@@ -129,19 +129,19 @@ export default function ReservationsPage() {
         if (!token || !venueId) return;
         try {
           await api(`/business/venues/${venueId}/walk-ins`, { method: "POST", token, body: { ...walkIn, table_id: Number(walkIn.table_id), party_size: Number(walkIn.party_size) } });
-          toast("Gost je smješten.");
+          toast(t("reserve.seated"));
           await load();
         } catch (reason) {
-          toast(reason instanceof ApiError ? (reason.errors?.table_id?.[0] || reason.message) : "Gost nije smješten.");
+          toast(reason instanceof ApiError ? (reason.errors?.table_id?.[0] || reason.message) : t("reserve.notSeated"));
         }
       }}>
-        <h2 className="font-serif text-2xl">Dolazak bez rezervacije</h2>
-        <Field label="Sto">
-          <ComboBox value={walkIn.table_id} onChange={(value) => setWalkIn({ ...walkIn, table_id: value })} options={[{ value: "", label: "Izaberite" }, ...(plan?.tables.map((table) => ({ value: String(table.id), label: table.name })) ?? [])]} />
+        <h2 className="font-serif text-2xl">{t("reserve.walkIn")}</h2>
+        <Field label={t("reserve.table")}>
+          <ComboBox value={walkIn.table_id} onChange={(value) => setWalkIn({ ...walkIn, table_id: value })} options={[{ value: "", label: t("reserve.choose") }, ...(plan?.tables.map((table) => ({ value: String(table.id), label: table.name })) ?? [])]} />
         </Field>
-        <Field label="Gostiju"><input type="number" min={1} className={inputClass} value={walkIn.party_size} onChange={(event) => setWalkIn({ ...walkIn, party_size: Number(event.target.value) })} /></Field>
-        <Field label="Ime"><input className={inputClass} value={walkIn.guest_name} onChange={(event) => setWalkIn({ ...walkIn, guest_name: event.target.value })} /></Field>
-        <Button type="submit">Smjesti gosta</Button>
+        <Field label={t("reserve.party")}><input type="number" min={1} className={inputClass} value={walkIn.party_size} onChange={(event) => setWalkIn({ ...walkIn, party_size: Number(event.target.value) })} /></Field>
+        <Field label={t("admin.name")}><input className={inputClass} value={walkIn.guest_name} onChange={(event) => setWalkIn({ ...walkIn, guest_name: event.target.value })} /></Field>
+        <Button type="submit">{t("reserve.seatGuest")}</Button>
       </form>
     </div>
   );

@@ -480,18 +480,18 @@ function StaffPanel({ venueId }: { venueId: number }) {
     try {
       await api(`/business/venues/${venueId}/staff`, { method: "POST", token, body: { email, roles } });
       setEmail("");
-      toast("Osoblje je sačuvano.");
+      toast(t("staff.saved"));
       await load();
     } catch (error) {
-      const detail = error instanceof ApiError ? error.errors?.email?.[0] || error.message : "Osoblje nije sačuvano.";
+      const detail = error instanceof ApiError ? error.errors?.email?.[0] || error.message : t("staff.notSaved");
       toast(detail);
     }
   }
 
   async function remove(id: number) {
-    if (!token || !window.confirm("Ukloniti ovu osobu sa lokala?")) return;
+    if (!token || !window.confirm(t("staff.removeConfirm"))) return;
     await api(`/business/venues/${venueId}/staff/${id}`, { method: "DELETE", token });
-    toast("Osoblje je uklonjeno.");
+    toast(t("staff.removed"));
     await load();
   }
 
@@ -518,7 +518,7 @@ function StaffPanel({ venueId }: { venueId: number }) {
       {loading ? <FieldSkeleton /> : null}
       {!loading ? (
         <ul className="space-y-2">
-          {rows.length === 0 ? <li className="text-sm text-muted">Niko još nije dodijeljen ovom lokalu.</li> : null}
+          {rows.length === 0 ? <li className="text-sm text-muted">{t("staff.noneAssigned")}</li> : null}
           {rows.map((row) => (
             <li key={row.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-paper p-4 text-sm">
               <span>
@@ -526,7 +526,7 @@ function StaffPanel({ venueId }: { venueId: number }) {
                 <span className="mt-1 block text-muted">{row.email}</span>
                 <span className="mt-1 block">{row.roles.map((role) => staffRoles.find((item) => item.id === role)?.label ?? role).join(", ")}</span>
               </span>
-              <button type="button" className="text-coral" onClick={() => void remove(row.id)}>Ukloni</button>
+              <button type="button" className="text-coral" onClick={() => void remove(row.id)}>{t("staff.remove")}</button>
             </li>
           ))}
         </ul>

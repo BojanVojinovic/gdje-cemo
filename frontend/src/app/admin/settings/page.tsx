@@ -41,9 +41,9 @@ export default function AdminSettingsPage() {
     if (!token) return;
     try {
       await api("/admin/settings", { method: "PUT", token, body: settings });
-      toast("Podešavanja su sačuvana.");
+      toast(t("admin.settingsSaved"));
     } catch (error) {
-      toast(error instanceof ApiError ? error.message : "Čuvanje nije uspjelo.");
+      toast(error instanceof ApiError ? error.message : t("admin.saveFailed"));
     }
   }
 
@@ -58,23 +58,23 @@ export default function AdminSettingsPage() {
   }
 
   async function remove(promotion: Promotion) {
-    if (!token || !window.confirm("Obrisati promociju?")) return;
+    if (!token || !window.confirm(t("admin.deletePromo"))) return;
     await api(`/admin/promotions/${promotion.id}`, { method: "DELETE", token });
     await load();
   }
 
   return (
     <div className="space-y-8">
-      <h1 className="font-serif text-4xl">Podešavanja</h1>
+      <h1 className="font-serif text-4xl">{t("admin.settings")}</h1>
       {loading ? <SettingsFormSkeleton /> : <form onSubmit={save} className="space-y-3 rounded-lg border border-line bg-paper p-5">
-        <Field label="Naziv sajta"><input className={inputClass} value={settings.site_name} onChange={(event) => setSettings({ ...settings, site_name: event.target.value })} /></Field>
-        <Field label="Rečenica"><input className={inputClass} value={settings.tagline} onChange={(event) => setSettings({ ...settings, tagline: event.target.value })} /></Field>
-        <Field label="Email podrške"><input className={inputClass} type="email" value={settings.support_email} onChange={(event) => setSettings({ ...settings, support_email: event.target.value })} /></Field>
-        <Field label="Podrazumijevani grad"><input className={inputClass} value={settings.default_city} onChange={(event) => setSettings({ ...settings, default_city: event.target.value })} /></Field>
+        <Field label={t("admin.siteName")}><input className={inputClass} value={settings.site_name} onChange={(event) => setSettings({ ...settings, site_name: event.target.value })} /></Field>
+        <Field label={t("admin.tagline")}><input className={inputClass} value={settings.tagline} onChange={(event) => setSettings({ ...settings, tagline: event.target.value })} /></Field>
+        <Field label={t("admin.supportEmail")}><input className={inputClass} type="email" value={settings.support_email} onChange={(event) => setSettings({ ...settings, support_email: event.target.value })} /></Field>
+        <Field label={t("admin.defaultCity")}><input className={inputClass} value={settings.default_city} onChange={(event) => setSettings({ ...settings, default_city: event.target.value })} /></Field>
         <Button type="submit">{t("action.save")}</Button>
       </form>}
       {!loading ? <section className="space-y-3">
-        <h2 className="font-serif text-2xl">Istaknuti sadržaj</h2>
+        <h2 className="font-serif text-2xl">{t("admin.featuredContent")}</h2>
         <form onSubmit={addPromotion} className="grid gap-2 md:grid-cols-3">
           <input className={inputClass} value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t("content.title")} required />
           <input className={inputClass} value={subtitle} onChange={(event) => setSubtitle(event.target.value)} placeholder={t("field.subtitle")} />

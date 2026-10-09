@@ -1,6 +1,16 @@
-export function formatDate(value?: string | null) {
+const dateLocales: Record<string, string> = {
+  cnr: "sr-Latn-ME",
+  en: "en",
+  de: "de",
+  es: "es",
+  fr: "fr",
+  it: "it",
+  ru: "ru",
+};
+
+export function formatDate(value?: string | null, locale = "cnr") {
   if (!value) return "";
-  return new Intl.DateTimeFormat("sr-Latn-ME", {
+  return new Intl.DateTimeFormat(dateLocales[locale] ?? "sr-Latn-ME", {
     day: "numeric",
     month: "long",
     year: "numeric",

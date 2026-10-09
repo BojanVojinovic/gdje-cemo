@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { Skeleton } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -8,6 +9,7 @@ import { useEffect, useState } from "react";
 
 export function FollowButton({ venueId }: { venueId: number }) {
   const { token, user, ready } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const [following, setFollowing] = useState(false);
   const [known, setKnown] = useState(false);
@@ -44,7 +46,7 @@ export function FollowButton({ venueId }: { venueId: number }) {
 
   return (
     <button type="button" onClick={() => void toggle()} className={`min-h-11 border px-4 text-sm font-semibold ${following ? "border-sea bg-sea text-snow" : "border-line bg-paper text-ink"}`}>
-      {following ? "Pratite novosti" : "Prati novosti"}
+      {following ? t("follow.off") : t("follow.on")}
     </button>
   );
 }

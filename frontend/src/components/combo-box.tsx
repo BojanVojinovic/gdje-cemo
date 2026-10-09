@@ -130,7 +130,7 @@ export function ComboBox({
           className="fixed z-[80] overflow-auto rounded-xl border border-line bg-paper py-1 shadow-[var(--shadow-card)]"
           style={{ top: panel.top, bottom: panel.bottom, left: panel.left, width: panel.width, maxHeight: panel.maxHeight }}
         >
-          {filtered.length === 0 ? <li className="px-3 py-2 text-sm text-muted">Nema poklapanja</li> : null}
+          {filtered.length === 0 ? <li className="px-3 py-2 text-sm text-muted">{t("combo.none")}</li> : null}
           {filtered.map((option, index) => {
             const header = option.group && option.group !== lastGroup ? option.group : null;
             if (option.group) lastGroup = option.group;

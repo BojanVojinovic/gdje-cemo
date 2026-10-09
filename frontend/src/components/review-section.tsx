@@ -23,7 +23,7 @@ export function ReviewSection({
   count: number;
 }) {
   const { token, user } = useAuth();
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const router = useRouter();
   const toast = useToast();
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -59,7 +59,7 @@ export function ReviewSection({
       return;
     }
     if (body.trim().length < 10) {
-      setError("Recenzija mora imati bar 10 karaktera.");
+      setError(t("review.min"));
       return;
     }
     setSubmitting(true);
@@ -67,20 +67,20 @@ export function ReviewSection({
     try {
       await api(`/venues/${venueId}/reviews`, { method: "POST", token, body: { rating, body } });
       setBody("");
-      toast("Recenzija je sačuvana.");
+      toast(t("review.saved"));
       router.refresh();
       await load(1);
     } catch (reason) {
-      setError(fieldError(reason, "body") || (reason instanceof ApiError ? reason.message : "Slanje nije uspjelo."));
+      setError(fieldError(reason, "body") || (reason instanceof ApiError ? reason.message : t("review.sendFailed")));
     } finally {
       setSubmitting(false);
     }
   }
 
   async function remove(review: Review) {
-    if (!token || !window.confirm("Obrisati recenziju?")) return;
+    if (!token || !window.confirm(t("review.deleteConfirm"))) return;
     await api(`/reviews/${review.id}`, { method: "DELETE", token });
-    toast("Recenzija je obrisana.");
+    toast(t("review.deleted"));
     router.refresh();
     await load(page);
   }
@@ -89,7 +89,7 @@ export function ReviewSection({
 
   return (
     <section className="space-y-5">
-      <h2 className="font-serif text-3xl">Recenzije</h2>
+      <h2 className="font-serif text-3xl">{t("review.title")}</h2>
       <div className="flex items-end gap-6">
         <p className="font-serif text-5xl">{average.toFixed(1)}</p>
         <div className="flex-1 space-y-1">
@@ -106,37 +106,37 @@ export function ReviewSection({
       </div>
 
       <form onSubmit={submit} className="space-y-3 rounded-lg border border-line bg-paper p-4">
-        <Field label="Ocjena">
+        <Field label={t("review.rating")}>
           <ComboBox value={String(rating)} onChange={(value) => setRating(Number(value))} options={[5, 4, 3, 2, 1].map((score) => ({ value: String(score), label: String(score) }))} />
         </Field>
-        <Field label="Utisak" error={error ?? undefined}>
+        <Field label={t("review.bodyLabel")} error={error ?? undefined}>
           <textarea className={inputClass + " min-h-28 py-3"} value={body} onChange={(event) => setBody(event.target.value)} placeholder={t("review.hint")} />
         </Field>
-        <Button type="submit" loading={submitting}>Objavi recenziju</Button>
+        <Button type="submit" loading={submitting}>{t("review.publish")}</Button>
       </form>
 
       {loading ? <ReviewListSkeleton /> : null}
-      {!loading && reviews.length === 0 ? <EmptyState title="Nema recenzija." body="Budite prvi koji će opisati ovo mjesto." /> : null}
+      {!loading && reviews.length === 0 ? <EmptyState title={t("review.empty")} body={t("review.emptyHint")} /> : null}
       {!loading ? <ul className="space-y-4">
         {reviews.map((review) => (
           <li key={review.id} className="rounded-lg border border-line bg-paper p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="font-medium">{review.user?.name}</p>
-                <p className="text-xs text-muted">{formatDate(review.created_at)}</p>
+                <p className="text-xs text-muted">{formatDate(review.created_at, locale)}</p>
               </div>
               <Stars value={review.rating} size="sm" />
             </div>
             <p className="mt-3 text-sm leading-6">{review.body}</p>
             {review.response ? (
               <div className="mt-3 rounded-2xl bg-cream p-3 text-sm">
-                <p className="font-medium">Odgovor lokala</p>
+                <p className="font-medium">{t("review.venueReply")}</p>
                 <p className="mt-1">{review.response.body}</p>
               </div>
             ) : null}
             {review.can_edit ? (
               <div className="mt-3 flex gap-2">
-                <Button variant="secondary" onClick={() => setEditing(review)}>Izmijeni</Button>
+                <Button variant="secondary" onClick={() => setEditing(review)}>{t("review.edit")}</Button>
                 <Button variant="ghost" onClick={() => remove(review)}>{t("action.delete")}</Button>
               </div>
             ) : null}
@@ -148,8 +148,8 @@ export function ReviewSection({
       </ul> : null}
       {meta && meta.last_page > 1 ? (
         <div className="flex justify-center gap-2">
-          <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Prethodna</Button>
-          <Button variant="secondary" disabled={page >= meta.last_page} onClick={() => setPage((value) => value + 1)}>Sljedeća</Button>
+          <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>{t("page.prev")}</Button>
+          <Button variant="secondary" disabled={page >= meta.last_page} onClick={() => setPage((value) => value + 1)}>{t("page.next")}</Button>
         </div>
       ) : null}
       <EditReviewModal review={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); router.refresh(); void load(page); }} />
@@ -180,20 +180,20 @@ export function EditReviewModal({ review, onClose, onSaved }: { review: Review |
     setLoading(true);
     try {
       await api(`/reviews/${review.id}`, { method: "PUT", token, body: { rating, body } });
-      toast("Recenzija je izmijenjena.");
+      toast(t("review.updated"));
       onSaved();
     } catch (error) {
-      toast(error instanceof ApiError ? error.message : "Izmjena nije uspjela.");
+      toast(error instanceof ApiError ? error.message : t("review.updateFailed"));
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <Modal open={!!review} title="Izmjena recenzije" onClose={onClose}>
+    <Modal open={!!review} title={t("review.editTitle")} onClose={onClose}>
       <form onSubmit={save} className="space-y-3">
-        <Field label="Ocjena"><ComboBox value={String(rating)} onChange={(value) => setRating(Number(value))} options={[5, 4, 3, 2, 1].map((score) => ({ value: String(score), label: String(score) }))} /></Field>
-        <Field label="Tekst"><textarea className={inputClass + " min-h-28 py-3"} value={body} onChange={(event) => setBody(event.target.value)} /></Field>
+        <Field label={t("review.rating")}><ComboBox value={String(rating)} onChange={(value) => setRating(Number(value))} options={[5, 4, 3, 2, 1].map((score) => ({ value: String(score), label: String(score) }))} /></Field>
+        <Field label={t("review.text")}><textarea className={inputClass + " min-h-28 py-3"} value={body} onChange={(event) => setBody(event.target.value)} /></Field>
         <Button type="submit" loading={loading}>{t("action.save")}</Button>
       </form>
     </Modal>
@@ -206,6 +206,7 @@ export function ReportButton({ type, id }: { type: string; id: number }) {
 
 function ReportInline({ type, id }: { type: string; id: number }) {
   const { token, user } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -222,10 +223,10 @@ function ReportInline({ type, id }: { type: string; id: number }) {
     setLoading(true);
     try {
       await api("/reports", { method: "POST", token, body: { reportable_type: type, reportable_id: id, reason, description } });
-      toast("Prijava je poslata.");
+      toast(t("report.sent"));
       setOpen(false);
     } catch (error) {
-      toast(error instanceof ApiError ? error.message : "Prijava nije poslata.");
+      toast(error instanceof ApiError ? error.message : t("report.failed"));
     } finally {
       setLoading(false);
     }
@@ -233,21 +234,21 @@ function ReportInline({ type, id }: { type: string; id: number }) {
 
   return (
     <>
-      <button type="button" className="text-xs text-muted underline" onClick={() => setOpen(true)}>Prijavi</button>
-      <Modal open={open} title="Prijava sadržaja" onClose={() => setOpen(false)}>
+      <button type="button" className="text-xs text-muted underline" onClick={() => setOpen(true)}>{t("report.action")}</button>
+      <Modal open={open} title={t("report.title")} onClose={() => setOpen(false)}>
         <form onSubmit={submit} className="space-y-3">
-          <Field label="Razlog">
+          <Field label={t("report.reason")}>
             <ComboBox value={reason} onChange={setReason} options={[
-              { value: "spam", label: "Spam" },
-              { value: "inappropriate", label: "Neprikladno" },
-              { value: "misleading", label: "Zavaravajuće" },
-              { value: "incorrect_information", label: "Netačne informacije" },
-              { value: "harassment", label: "Uznemiravanje" },
-              { value: "other", label: "Drugo" },
+              { value: "spam", label: t("report.spam") },
+              { value: "inappropriate", label: t("report.inappropriate") },
+              { value: "misleading", label: t("report.misleading") },
+              { value: "incorrect_information", label: t("report.incorrect") },
+              { value: "harassment", label: t("report.harassment") },
+              { value: "other", label: t("report.other") },
             ]} />
           </Field>
-          <Field label="Opis"><textarea className={inputClass + " min-h-24 py-3"} value={description} onChange={(event) => setDescription(event.target.value)} /></Field>
-          <Button type="submit" loading={loading}>Pošalji</Button>
+          <Field label={t("report.details")}><textarea className={inputClass + " min-h-24 py-3"} value={description} onChange={(event) => setDescription(event.target.value)} /></Field>
+          <Button type="submit" loading={loading}>{t("report.send")}</Button>
         </form>
       </Modal>
     </>

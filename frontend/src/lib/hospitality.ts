@@ -133,13 +133,24 @@ export const contentStatusLabel: Record<string, string> = {
   hidden: "Sakriveno",
 };
 
-export function seatsLabel(min: number, max: number) {
-  return min === max ? `${max} mjesta` : `${min}–${max} mjesta`;
+export function seatsLabel(min: number, max: number, label?: (key: string, vars?: Record<string, string | number>) => string) {
+  if (!label) return min === max ? `${max} mjesta` : `${min}–${max} mjesta`;
+  return min === max ? label("seat.exact", { n: max }) : label("seat.range", { min, max });
 }
 
-export function when(value?: string | null) {
+const dateLocales: Record<string, string> = {
+  cnr: "sr-Latn-ME",
+  en: "en",
+  de: "de",
+  es: "es",
+  fr: "fr",
+  it: "it",
+  ru: "ru",
+};
+
+export function when(value?: string | null, locale = "cnr") {
   if (!value) return "";
-  return new Intl.DateTimeFormat("sr-Latn-ME", {
+  return new Intl.DateTimeFormat(dateLocales[locale] ?? "sr-Latn-ME", {
     day: "numeric",
     month: "short",
     hour: "2-digit",

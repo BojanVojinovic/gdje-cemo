@@ -33,18 +33,18 @@ export default function AdminReviewsPage() {
   async function moderate(review: Review, status: string) {
     if (!token) return;
     await api(`/admin/reviews/${review.id}`, { method: "PUT", token, body: { status } });
-    toast("Recenzija je moderirana.");
+    toast(t("admin.reviewModerated"));
     await load();
   }
 
   async function remove(review: Review) {
-    if (!token || !window.confirm("Obrisati recenziju?")) return;
+    if (!token || !window.confirm(t("review.deleteConfirm"))) return;
     await api(`/admin/reviews/${review.id}`, { method: "DELETE", token });
     await load();
   }
 
   async function bulk(action: "hide" | "publish" | "delete") {
-    if (!token || !selected.length || !window.confirm("Primijeniti radnju na označene recenzije?")) return;
+    if (!token || !selected.length || !window.confirm(t("admin.bulkReviews"))) return;
     await api("/admin/reviews/bulk", { method: "POST", token, body: { action, ids: selected } });
     setSelected([]);
     await load();
@@ -52,14 +52,14 @@ export default function AdminReviewsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="font-serif text-4xl">Recenzije</h1>
+      <h1 className="font-serif text-4xl">{t("admin.reviews")}</h1>
       <div className="flex gap-2">
-        <Button variant="secondary" onClick={() => bulk("hide")}>Sakrij</Button>
-        <Button variant="secondary" onClick={() => bulk("publish")}>Objavi</Button>
+        <Button variant="secondary" onClick={() => bulk("hide")}>{t("action.hide")}</Button>
+        <Button variant="secondary" onClick={() => bulk("publish")}>{t("action.publish")}</Button>
         <Button variant="danger" onClick={() => bulk("delete")}>{t("action.delete")}</Button>
       </div>
       {loading ? <InfoListSkeleton /> : null}
-      {!loading && reviews.length === 0 ? <EmptyState title="Nema recenzija." body="Kad korisnici ostave utiske, pojaviće se ovdje." /> : null}
+      {!loading && reviews.length === 0 ? <EmptyState title={t("admin.noReviews")} body={t("admin.noReviewsHint")} /> : null}
       {!loading ? <ul className="space-y-3">
         {reviews.map((review) => (
           <li key={review.id} className="rounded-lg border border-line bg-paper p-4 text-sm">
@@ -71,7 +71,7 @@ export default function AdminReviewsPage() {
               </span>
             </label>
             <div className="mt-3 flex gap-3">
-              <button type="button" onClick={() => moderate(review, review.status === "hidden" ? "published" : "hidden")}>{review.status === "hidden" ? "Objavi" : "Sakrij"}</button>
+              <button type="button" onClick={() => moderate(review, review.status === "hidden" ? "published" : "hidden")}>{review.status === "hidden" ? t("action.publish") : t("action.hide")}</button>
               <button type="button" className="text-coral" onClick={() => remove(review)}>{t("action.delete")}</button>
             </div>
           </li>

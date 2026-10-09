@@ -1,6 +1,7 @@
 "use client";
 
-import { seatsLabel, tableStateLabel, type FloorTable } from "@/lib/hospitality";
+import { useI18n } from "@/components/i18n-provider";
+import { seatsLabel, type FloorTable } from "@/lib/hospitality";
 import { useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 
 const shapeClass: Record<string, string> = {
@@ -19,15 +20,21 @@ const stateClass: Record<string, string> = {
   unavailable: "border-muted bg-cream text-muted [background-image:repeating-linear-gradient(135deg,transparent,transparent_4px,rgba(109,98,88,0.16)_4px,rgba(109,98,88,0.16)_6px)]",
 };
 
+const tableStates = ["available", "selected", "reserved", "occupied", "unavailable"] as const;
+
 export function TableLegend() {
+  const { t } = useI18n();
   return (
     <ul className="flex flex-wrap gap-2 text-xs">
-      {Object.entries(tableStateLabel).map(([key, label]) => (
+      {tableStates.map((key) => {
+        const label = t(`table.${key}`);
+        return (
         <li key={key} className={`inline-flex items-center gap-2 rounded-md border px-2 py-1 ${stateClass[key]}`}>
           <span aria-hidden="true">{key === "available" ? "○" : key === "selected" ? "●" : key === "reserved" ? "◐" : key === "occupied" ? "■" : "×"}</span>
           {label}
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }
@@ -53,6 +60,7 @@ export function FloorCanvas({
   onSelect?: (id: number) => void;
   onChange?: (table: FloorTable) => void;
 }) {
+  const { t } = useI18n();
   const frame = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(compact ? 0 : 1);
 
@@ -87,7 +95,7 @@ export function FloorCanvas({
               key={table.id}
               type="button"
               aria-pressed={selectedId === table.id}
-              aria-label={`${table.name}, ${seatsLabel(table.capacity_min, table.capacity_max)}, ${tableStateLabel[state] ?? state}${table.zone ? `, ${table.zone}` : ""}`}
+              aria-label={`${table.name}, ${seatsLabel(table.capacity_min, table.capacity_max, t)}, ${t(`table.${state}`)}${table.zone ? `, ${table.zone}` : ""}`}
               className={`absolute flex flex-col items-center justify-center border-2 px-1 text-center leading-tight ${compact ? "text-[10px]" : "text-[11px]"} ${shapeClass[table.shape] ?? shapeClass.square} ${stateClass[state] ?? stateClass.available}`}
               style={{
                 left: table.position_x * fitted,
@@ -99,8 +107,8 @@ export function FloorCanvas({
               onPointerDown={(event) => startDrag(event, table, editable, onSelect, onChange)}
             >
               <span className="font-medium" style={{ transform: `rotate(${-table.rotation}deg)` }}>{table.name}</span>
-              {compact ? null : <span style={{ transform: `rotate(${-table.rotation}deg)` }}>{seatsLabel(table.capacity_min, table.capacity_max)}</span>}
-              {compact ? null : <span style={{ transform: `rotate(${-table.rotation}deg)` }}>{tableStateLabel[state] ?? state}</span>}
+              {compact ? null : <span style={{ transform: `rotate(${-table.rotation}deg)` }}>{seatsLabel(table.capacity_min, table.capacity_max, t)}</span>}
+              {compact ? null : <span style={{ transform: `rotate(${-table.rotation}deg)` }}>{t(`table.${state}`)}</span>}
               {editable ? (
                 <span
                   role="presentation"

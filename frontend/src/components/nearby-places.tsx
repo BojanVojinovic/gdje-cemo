@@ -40,8 +40,8 @@ export function NearbyPlaces({ initial }: { initial: Venue[] }) {
       <h2 className="font-serif text-3xl">{t("home.nearby")}</h2>
       {status === "asking" || status === "idle" ? <VenueGridSkeleton count={3} /> : null}
       {status === "denied" ? <p className="text-sm text-muted">{t("home.locationOff")}</p> : null}
-      {status === "empty" ? <p className="text-sm text-muted">U krugu od 30 km nema objavljenih mjesta.</p> : null}
-      {status === "error" ? <p className="text-sm text-coral">Blizinu trenutno ne možemo učitati.</p> : null}
+      {status === "empty" ? <p className="text-sm text-muted">{t("nearby.empty")}</p> : null}
+      {status === "error" ? <p className="text-sm text-coral">{t("nearby.error")}</p> : null}
       {venues.length ? <VenueGrid venues={venues} /> : null}
     </section>
   );

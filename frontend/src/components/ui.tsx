@@ -94,9 +94,10 @@ export function Badge({ children, tone = "neutral" }: { children: React.ReactNod
 }
 
 export function Stars({ value, size = "md" }: { value: number; size?: "sm" | "md" }) {
+  const { t } = useI18n();
   const rounded = Math.round(value);
   return (
-    <span className={`tracking-tight text-gold ${size === "sm" ? "text-sm" : "text-base"}`} aria-label={`Ocjena ${value} od 5`}>
+    <span className={`tracking-tight text-gold ${size === "sm" ? "text-sm" : "text-base"}`} aria-label={t("stars.of", { value })}>
       {"★★★★★".slice(0, rounded)}
       <span className="text-line">{"★★★★★".slice(rounded)}</span>
     </span>
@@ -118,9 +119,10 @@ export function Skeleton({ className = "" }: { className?: string }) {
 }
 
 export function SkeletonStack({ rows = 3, className = "h-24" }: { rows?: number; className?: string }) {
+  const { t } = useI18n();
   return (
     <div className="space-y-3" aria-busy="true" aria-live="polite">
-      <span className="sr-only">Učitavanje</span>
+      <span className="sr-only">{t("state.loading")}</span>
       {Array.from({ length: rows }, (_, index) => <Skeleton key={index} className={className} />)}
     </div>
   );
@@ -137,6 +139,7 @@ export function Modal({
   children: React.ReactNode;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/70 p-4 sm:items-center" role="presentation" onClick={onClose}>
@@ -149,8 +152,8 @@ export function Modal({
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <h2 id="dialog-title" className="font-serif text-2xl">{title}</h2>
-          <button type="button" className="min-h-11 px-2 text-sm text-muted" onClick={onClose} aria-label="Zatvori">
-            Zatvori
+          <button type="button" className="min-h-11 px-2 text-sm text-muted" onClick={onClose} aria-label={t("action.close")}>
+            {t("action.close")}
           </button>
         </div>
         {children}
@@ -160,12 +163,13 @@ export function Modal({
 }
 
 export function Pagination({ page, lastPage, onPage }: { page: number; lastPage: number; onPage: (page: number) => void }) {
+  const { t } = useI18n();
   if (lastPage <= 1) return null;
   return (
-    <nav className="flex items-center justify-center gap-2" aria-label="Stranice">
-      <Button variant="secondary" disabled={page <= 1} onClick={() => onPage(page - 1)}>Prethodna</Button>
+    <nav className="flex items-center justify-center gap-2" aria-label={t("page.label")}>
+      <Button variant="secondary" disabled={page <= 1} onClick={() => onPage(page - 1)}>{t("page.prev")}</Button>
       <span className="px-2 text-sm text-muted">{page} / {lastPage}</span>
-      <Button variant="secondary" disabled={page >= lastPage} onClick={() => onPage(page + 1)}>Sljedeća</Button>
+      <Button variant="secondary" disabled={page >= lastPage} onClick={() => onPage(page + 1)}>{t("page.next")}</Button>
     </nav>
   );
 }

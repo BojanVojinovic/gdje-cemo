@@ -36,10 +36,10 @@ export default function AdminCategoriesPage() {
     try {
       await api("/admin/categories", { method: "POST", token, body: { name, parent_id: parentId ? Number(parentId) : null } });
       setName("");
-      toast("Kategorija je kreirana.");
+      toast(t("cat.created"));
       await load();
     } catch (error) {
-      toast(error instanceof ApiError ? error.message : "Kreiranje nije uspjelo.");
+      toast(error instanceof ApiError ? error.message : t("cat.failed"));
     }
   }
 
@@ -50,27 +50,27 @@ export default function AdminCategoriesPage() {
   }
 
   async function remove(category: Category) {
-    if (!token || !window.confirm(`Obrisati kategoriju ${category.name}?`)) return;
+    if (!token || !window.confirm(t("cat.deleteAsk", { name: category.name }))) return;
     try {
       await api(`/admin/categories/${category.id}`, { method: "DELETE", token });
       await load();
     } catch (error) {
-      toast(error instanceof ApiError ? error.message : "Brisanje nije uspjelo.");
+      toast(error instanceof ApiError ? error.message : t("cat.deleteFailed"));
     }
   }
 
   return (
     <div className="space-y-4">
-      <h1 className="font-serif text-4xl">Kategorije</h1>
+      <h1 className="font-serif text-4xl">{t("admin.categories")}</h1>
       <form onSubmit={create} className="grid gap-3 rounded-lg border border-line bg-paper p-4 md:grid-cols-[1fr_1fr_auto]">
-        <Field label="Naziv"><input className={inputClass} value={name} onChange={(event) => setName(event.target.value)} required /></Field>
-        <Field label="Roditelj">
-          <ComboBox value={parentId} onChange={setParentId} options={[{ value: "", label: "Glavna kategorija" }, ...categories.map((category) => ({ value: String(category.id), label: category.name }))]} />
+        <Field label={t("field.name")}><input className={inputClass} value={name} onChange={(event) => setName(event.target.value)} required /></Field>
+        <Field label={t("cat.parent")}>
+          <ComboBox value={parentId} onChange={setParentId} options={[{ value: "", label: t("cat.root") }, ...categories.map((category) => ({ value: String(category.id), label: category.name }))]} />
         </Field>
         <div className="self-end"><Button type="submit">{t("action.add")}</Button></div>
       </form>
       {loading ? <InfoListSkeleton /> : null}
-      {!loading && categories.length === 0 ? <EmptyState title="Nema kategorija." body="Dodajte prvu kategoriju." /> : null}
+      {!loading && categories.length === 0 ? <EmptyState title={t("cat.empty")} body={t("cat.emptyHint")} /> : null}
       {!loading ? <ul className="space-y-3">
         {categories.map((category) => (
           <li key={category.id} className="rounded-lg border border-line bg-paper p-4">

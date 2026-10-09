@@ -7,7 +7,7 @@ import { CalendarSkeleton, InfoListSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { contentStatusLabel, when, type VenueContentItem } from "@/lib/hospitality";
+import { when, type VenueContentItem } from "@/lib/hospitality";
 import type { Venue } from "@/types";
 import { useEffect, useMemo, useState } from "react";
 
@@ -215,7 +215,7 @@ export default function ContentPage() {
       <ul className="space-y-3">
         {items.map((item) => (
           <li key={item.id} className="rounded-lg border border-line bg-paper p-4">
-            <p className="text-xs text-muted">{t(`content.type.${item.type}`)} · {contentStatusLabel[item.status] ?? item.status} · {item.venue?.name}</p>
+            <p className="text-xs text-muted">{t(`content.type.${item.type}`)} · {t(`cstatus.${item.status}`)} · {item.venue?.name}</p>
             <h3 className="font-serif text-2xl">{item.title}</h3>
             <p className="text-sm text-muted">{when(item.event_start_at || item.scheduled_at || item.published_at)}</p>
             <div className="mt-3 flex flex-wrap gap-2">

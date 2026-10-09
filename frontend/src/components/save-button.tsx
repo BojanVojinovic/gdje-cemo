@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { Button, Skeleton, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -9,6 +10,7 @@ import { useEffect, useState } from "react";
 
 export function SaveButton({ venueId, slug }: { venueId: number; slug: string }) {
   const { token, user, ready } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const toast = useToast();
   const [saved, setSaved] = useState(false);
@@ -50,10 +52,10 @@ export function SaveButton({ venueId, slug }: { venueId: number; slug: string })
         method: next ? "POST" : "DELETE",
         token,
       });
-      toast(next ? "Mjesto je sačuvano." : "Uklonjeno iz sačuvanih.");
+      toast(next ? t("save.toastOn") : t("save.toastOff"));
     } catch (error) {
       setSaved(!next);
-      toast(error instanceof ApiError ? error.message : "Čuvanje nije uspjelo.");
+      toast(error instanceof ApiError ? error.message : t("save.failed"));
     } finally {
       setLoading(false);
     }
@@ -63,7 +65,7 @@ export function SaveButton({ venueId, slug }: { venueId: number; slug: string })
 
   return (
     <Button variant={saved ? "primary" : "secondary"} onClick={toggle} loading={loading} aria-pressed={saved}>
-      {saved ? "Sačuvano" : "Sačuvaj"}
+      {saved ? t("save.saved") : t("save.action")}
     </Button>
   );
 }
