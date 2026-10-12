@@ -26,6 +26,7 @@ export default function BusinessHomePage() {
   const toast = useToast();
   const [data, setData] = useState<Dashboard | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsPayload | null>(null);
+  const [analyticsLoaded, setAnalyticsLoaded] = useState(false);
   const [days, setDays] = useState(30);
   const [venueId, setVenueId] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +49,11 @@ export default function BusinessHomePage() {
   useEffect(() => {
     if (!token || !user || user.role === "customer") return;
     const query = venueId ? `?days=${days}&venue_id=${venueId}` : `?days=${days}`;
-    api<AnalyticsPayload>(`/business/analytics${query}`, { token }).then((response) => setAnalytics(response.data)).catch(() => undefined);
+    setAnalyticsLoaded(false);
+    api<AnalyticsPayload>(`/business/analytics${query}`, { token })
+      .then((response) => setAnalytics(response.data))
+      .catch(() => setAnalytics(null))
+      .finally(() => setAnalyticsLoaded(true));
   }, [token, user, days, venueId]);
 
   async function apply(event: React.FormEvent) {
@@ -97,7 +102,7 @@ export default function BusinessHomePage() {
 
   return (
     <div className="space-y-6">
-      {analytics ? (
+      {!analyticsLoaded ? <StatGridSkeleton count={8} className="grid gap-3 sm:grid-cols-4" /> : analytics ? (
         <AnalyticsBoard
           data={analytics}
           days={days}
@@ -106,7 +111,7 @@ export default function BusinessHomePage() {
           venues={data.venues.map((venue) => ({ id: venue.id, name: venue.name }))}
           onVenue={setVenueId}
         />
-      ) : <StatGridSkeleton count={8} className="grid gap-3 sm:grid-cols-4" />}
+      ) : null}
       <h2 className="font-serif text-2xl">{t("dash.venues")}</h2>
       <div className="space-y-2">
         {data.venues.map((venue) => (

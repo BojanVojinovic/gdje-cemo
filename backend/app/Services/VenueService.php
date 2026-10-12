@@ -16,11 +16,18 @@ use Illuminate\Validation\ValidationException;
 
 class VenueService
 {
-    public function __construct(private readonly SlugService $slugs) {}
+    public function __construct(
+        private readonly SlugService $slugs,
+        private readonly SubscriptionService $subscriptions,
+    ) {}
 
     public function create(User $user, array $data): Venue
     {
         $business = $this->authorizedBusiness($user, (int) $data['business_id']);
+        $this->subscriptions->assertVenueSlot($user, $business);
+        if (filter_var($data['offers_delivery'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            $this->subscriptions->assertFeature($user, $business, 'delivery');
+        }
         $this->assertCategory($data);
 
         $data = $this->withTranslations($data);
@@ -48,6 +55,8 @@ class VenueService
         if (array_key_exists('business_id', $data)) {
             $this->authorizedBusiness($user, (int) $data['business_id']);
         }
+
+        $this->subscriptions->assertCanEnableDelivery($user, $venue, $data);
 
         if (isset($data['category_id']) || array_key_exists('subcategory_id', $data)) {
             $this->assertCategory([

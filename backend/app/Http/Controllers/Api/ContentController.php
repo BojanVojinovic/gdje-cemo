@@ -12,6 +12,7 @@ use App\Services\AuditService;
 use App\Services\ContentService;
 use App\Services\ImageService;
 use App\Services\SlugService;
+use App\Services\SubscriptionService;
 use App\Support\ApiResponse;
 use App\Support\ContentLocales;
 use Illuminate\Http\JsonResponse;
@@ -151,11 +152,13 @@ class ContentController extends Controller
         return ApiResponse::success(\App\Http\Resources\VenueContentResource::collection($query->get())->resolve());
     }
 
-    public function store(Request $request, SlugService $slugs, ImageService $images, ContentService $service, AuditService $audit): JsonResponse
+    public function store(Request $request, SlugService $slugs, ImageService $images, ContentService $service, AuditService $audit, SubscriptionService $subscriptions): JsonResponse
     {
         $data = $this->withCopy($this->validated($request));
         $venue = Venue::query()->findOrFail($data['venue_id']);
         $this->authorize('update', $venue);
+        $venue->loadMissing('business');
+        $subscriptions->assertFeature($request->user(), $venue->business, 'content');
         if ($venue->publishing_suspended && ($data['status'] ?? 'draft') !== 'draft') {
             abort(403, 'Objavljivanje za ovo mjesto je privremeno obustavljeno.');
         }

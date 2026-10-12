@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\Business\ApplicationController;
 use App\Http\Controllers\Api\Business\MenuController;
 use App\Http\Controllers\Api\Business\OpeningHourController;
 use App\Http\Controllers\Api\Business\StaffController as BusinessStaffController;
+use App\Http\Controllers\Api\Business\SubscriptionController;
 use App\Http\Controllers\Api\Business\VenueController as BusinessVenueController;
 use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\ContentController;
@@ -109,14 +110,17 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('business/apply', [ApplicationController::class, 'store']);
 
     Route::middleware('role:business,admin')->prefix('business')->group(function () {
+        Route::get('plans', [SubscriptionController::class, 'index']);
+        Route::post('subscription', [SubscriptionController::class, 'store']);
+        Route::post('subscription/cancel', [SubscriptionController::class, 'cancel']);
         Route::get('dashboard', [BusinessVenueController::class, 'dashboard']);
         Route::get('analytics', [AnalyticsController::class, 'business']);
         Route::get('venues/{venue}/shifts', [ShiftController::class, 'forVenue'])->whereNumber('venue');
-        Route::post('venues/{venue}/shifts', [ShiftController::class, 'store'])->whereNumber('venue');
-        Route::put('shifts/{staffShift}', [ShiftController::class, 'update']);
+        Route::post('venues/{venue}/shifts', [ShiftController::class, 'store'])->whereNumber('venue')->middleware('plan:staff');
+        Route::put('shifts/{staffShift}', [ShiftController::class, 'update'])->middleware('plan:staff');
         Route::delete('shifts/{staffShift}', [ShiftController::class, 'destroy']);
         Route::get('venues/{venue}/deliveries', [DeliveryController::class, 'forVenue'])->whereNumber('venue');
-        Route::put('deliveries/{deliveryOrder}', [DeliveryController::class, 'update']);
+        Route::put('deliveries/{deliveryOrder}', [DeliveryController::class, 'update'])->middleware('plan:delivery');
         Route::get('venues', [BusinessVenueController::class, 'index']);
         Route::post('venues', [BusinessVenueController::class, 'store']);
         Route::get('venues/{venue}', [BusinessVenueController::class, 'show']);
@@ -132,7 +136,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::put('venues/{venue}/hours', [OpeningHourController::class, 'update']);
 
         Route::get('venues/{venue}/staff', [BusinessStaffController::class, 'index']);
-        Route::post('venues/{venue}/staff', [BusinessStaffController::class, 'store']);
+        Route::post('venues/{venue}/staff', [BusinessStaffController::class, 'store'])->middleware('plan:staff');
         Route::delete('venues/{venue}/staff/{venueStaff}', [BusinessStaffController::class, 'destroy']);
 
         Route::post('venues/{venue}/menu/categories', [MenuController::class, 'storeCategory']);
@@ -145,20 +149,20 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::delete('menu/items/{menuItem}', [MenuController::class, 'destroyItem']);
         Route::post('menu/items/{menuItem}/image', [MenuController::class, 'updateItemImage']);
 
-        Route::post('venues/{venue}/floor-plan', [FloorPlanController::class, 'updatePlan'])->whereNumber('venue');
-        Route::post('venues/{venue}/zones', [FloorPlanController::class, 'storeZone'])->whereNumber('venue');
-        Route::put('zones/{zone}', [FloorPlanController::class, 'updateZone']);
-        Route::delete('zones/{zone}', [FloorPlanController::class, 'destroyZone']);
-        Route::post('venues/{venue}/tables', [FloorPlanController::class, 'storeTable'])->whereNumber('venue');
-        Route::put('tables/{table}', [FloorPlanController::class, 'updateTable']);
-        Route::post('tables/{table}/duplicate', [FloorPlanController::class, 'duplicateTable']);
-        Route::delete('tables/{table}', [FloorPlanController::class, 'destroyTable']);
-        Route::put('venues/{venue}/tables/layout', [FloorPlanController::class, 'layout'])->whereNumber('venue');
-        Route::post('tables/{table}/qr', [FloorPlanController::class, 'regenerateQr']);
-        Route::post('venues/{venue}/table-combinations', [FloorPlanController::class, 'storeCombination'])->whereNumber('venue');
-        Route::put('venues/{venue}/reservation-settings', [FloorPlanController::class, 'updateSettings'])->whereNumber('venue');
-        Route::post('venues/{venue}/closures', [FloorPlanController::class, 'storeClosure'])->whereNumber('venue');
-        Route::delete('closures/{venueClosure}', [FloorPlanController::class, 'destroyClosure']);
+        Route::post('venues/{venue}/floor-plan', [FloorPlanController::class, 'updatePlan'])->whereNumber('venue')->middleware('plan:floor');
+        Route::post('venues/{venue}/zones', [FloorPlanController::class, 'storeZone'])->whereNumber('venue')->middleware('plan:floor');
+        Route::put('zones/{zone}', [FloorPlanController::class, 'updateZone'])->middleware('plan:floor');
+        Route::delete('zones/{zone}', [FloorPlanController::class, 'destroyZone'])->middleware('plan:floor');
+        Route::post('venues/{venue}/tables', [FloorPlanController::class, 'storeTable'])->whereNumber('venue')->middleware('plan:floor');
+        Route::put('tables/{table}', [FloorPlanController::class, 'updateTable'])->middleware('plan:floor');
+        Route::post('tables/{table}/duplicate', [FloorPlanController::class, 'duplicateTable'])->middleware('plan:floor');
+        Route::delete('tables/{table}', [FloorPlanController::class, 'destroyTable'])->middleware('plan:floor');
+        Route::put('venues/{venue}/tables/layout', [FloorPlanController::class, 'layout'])->whereNumber('venue')->middleware('plan:floor');
+        Route::post('tables/{table}/qr', [FloorPlanController::class, 'regenerateQr'])->middleware('plan:floor');
+        Route::post('venues/{venue}/table-combinations', [FloorPlanController::class, 'storeCombination'])->whereNumber('venue')->middleware('plan:floor');
+        Route::put('venues/{venue}/reservation-settings', [FloorPlanController::class, 'updateSettings'])->whereNumber('venue')->middleware('plan:floor');
+        Route::post('venues/{venue}/closures', [FloorPlanController::class, 'storeClosure'])->whereNumber('venue')->middleware('plan:floor');
+        Route::delete('closures/{venueClosure}', [FloorPlanController::class, 'destroyClosure'])->middleware('plan:floor');
 
         Route::get('reservations', [ReservationController::class, 'index']);
         Route::post('reservations/{reservation}/status', [ReservationController::class, 'transition']);
@@ -167,14 +171,14 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('content', [ContentController::class, 'index']);
         Route::get('content-calendar', [ContentController::class, 'calendar']);
         Route::post('content', [ContentController::class, 'store']);
-        Route::put('content/{content}', [ContentController::class, 'update']);
-        Route::post('content/{content}/publish', [ContentController::class, 'publish']);
-        Route::post('content/{content}/duplicate', [ContentController::class, 'duplicate']);
-        Route::delete('content/{content}', [ContentController::class, 'destroy']);
+        Route::put('content/{content}', [ContentController::class, 'update'])->middleware('plan:content');
+        Route::post('content/{content}/publish', [ContentController::class, 'publish'])->middleware('plan:content');
+        Route::post('content/{content}/duplicate', [ContentController::class, 'duplicate'])->middleware('plan:content');
+        Route::delete('content/{content}', [ContentController::class, 'destroy'])->middleware('plan:content');
 
         Route::get('sessions', [DiningController::class, 'sessions']);
-        Route::post('sessions/{session}/close', [DiningController::class, 'closeSession']);
-        Route::put('orders/{order}', [DiningController::class, 'updateOrder']);
+        Route::post('sessions/{session}/close', [DiningController::class, 'closeSession'])->middleware('plan:floor');
+        Route::put('orders/{order}', [DiningController::class, 'updateOrder'])->middleware('plan:floor');
     });
 
     Route::middleware('role:admin')->prefix('admin')->group(function () {

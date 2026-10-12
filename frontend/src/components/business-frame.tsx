@@ -9,7 +9,10 @@ export function BusinessFrame({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { t } = useI18n();
   const ownerGroups = [
-    { title: t("business.overview"), links: [{ href: "/business", label: t("business.today") }] },
+    { title: t("business.overview"), links: [
+      { href: "/business", label: t("business.today") },
+      { href: "/business/plans", label: t("plan.nav") },
+    ] },
     { title: t("business.place"), links: [
       { href: "/business/venues", label: t("business.venues") },
       { href: "/business/venues/new", label: t("business.new") },

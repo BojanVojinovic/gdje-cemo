@@ -150,6 +150,10 @@ export function SiteFooter() {
           <Link href="/register" className="block text-ink/85">{t("footer.openAccount")}</Link>
         </div>
       </div>
+      <div className="mx-auto flex max-w-6xl flex-wrap gap-x-6 gap-y-2 px-4 pb-8 text-sm">
+        <Link href="/privacy" className="text-ink/85">{t("legal.privacy")}</Link>
+        <Link href="/terms" className="text-ink/85">{t("legal.terms")}</Link>
+      </div>
     </footer>
   );
 }

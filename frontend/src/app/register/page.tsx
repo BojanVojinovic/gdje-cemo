@@ -65,6 +65,11 @@ export default function RegisterPage() {
         <Field label={t("auth.password2")} error={errors.password_confirmation}><input className={inputClass} type="password" value={form.password_confirmation} onChange={(event) => set("password_confirmation", event.target.value)} required /></Field>
         <Button type="submit" loading={loading} className="w-full">{t("auth.create")}</Button>
       </form>
+      <p className="mt-4 text-sm text-muted">
+        <Link href="/privacy" className="text-sea">{t("legal.privacy")}</Link>
+        <span aria-hidden="true"> · </span>
+        <Link href="/terms" className="text-sea">{t("legal.terms")}</Link>
+      </p>
       <p className="mt-4 text-sm">{t("auth.haveAccount")} <Link href="/login" className="text-sea">{t("auth.login")}</Link></p>
     </AuthCard>
   );

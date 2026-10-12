@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Venue;
 use App\Models\VenueStaff;
 use App\Services\NotificationService;
+use App\Services\SubscriptionService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,13 +30,19 @@ class StaffController extends Controller
         ])->values());
     }
 
-    public function store(Request $request, Venue $venue, NotificationService $notifications): JsonResponse
+    public function store(Request $request, Venue $venue, NotificationService $notifications, SubscriptionService $subscriptions): JsonResponse
     {
         $this->authorize('update', $venue);
         $data = $this->validated($request);
         $user = User::query()->where('email', $data['email'])->where('is_active', true)->first();
         if (! $user) {
             throw ValidationException::withMessages(['email' => 'Nema naloga sa tom adresom. Osoba prvo treba da se registruje.']);
+        }
+
+        $alreadyThere = VenueStaff::query()->where('user_id', $user->id)->where('venue_id', $venue->id)->exists();
+        if (! $alreadyThere) {
+            $venue->loadMissing('business');
+            $subscriptions->assertStaffSlot($request->user(), $venue->business);
         }
 
         $row = VenueStaff::query()->updateOrCreate(

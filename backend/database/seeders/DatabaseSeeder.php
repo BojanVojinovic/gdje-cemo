@@ -21,6 +21,7 @@ use App\Models\Venue;
 use App\Services\BlobStorage;
 use App\Services\ReviewService;
 use App\Services\SlugService;
+use App\Services\SubscriptionService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -94,6 +95,10 @@ class DatabaseSeeder extends Seeder
             'status' => BusinessStatus::Pending,
         ]);
         $pending->users()->syncWithoutDetaching([$users['luka']->id => ['role' => 'owner']]);
+
+        $plans = app(SubscriptionService::class);
+        $plans->grant($adriatic, 'group');
+        $plans->grant($bakeryGroup, 'service');
 
         $everyday = [];
         foreach (range(1, 7) as $day) {

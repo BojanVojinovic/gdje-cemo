@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const staticRoutes = ["", "/places"].map((path) => ({
+  const staticRoutes = ["", "/places", "/privacy", "/terms"].map((path) => ({
     url: `${site}${path || "/"}`,
     changeFrequency: "daily" as const,
     priority: path === "" ? 1 : 0.8,
