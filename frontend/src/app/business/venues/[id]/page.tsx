@@ -2,6 +2,7 @@
 
 import { useI18n } from "@/components/i18n-provider";
 import { CopyEditor, type CopyBag } from "@/components/locale-tabs";
+import { MenuMarkFields } from "@/components/menu-marks";
 import { BrandPanel } from "@/components/brand-panel";
 import { VenueForm } from "@/components/venue-form";
 import { FieldSkeleton, StatGridSkeleton } from "@/components/skeletons";
@@ -237,10 +238,10 @@ function MenuEditor({ venue, onChange }: { venue: Venue; onChange: () => Promise
     await onChange();
   }
 
-  async function addItem(category: MenuCategory, itemName: string, price: string, description: string, translations: CopyBag) {
+  async function addItem(category: MenuCategory, itemName: string, price: string, description: string, translations: CopyBag, marks: string[]) {
     if (!token) return;
     try {
-      await api(`/business/menu/categories/${category.id}/items`, { method: "POST", token, body: { name: itemName, description: description || null, price: Number(price), is_available: true, translations } });
+      await api(`/business/menu/categories/${category.id}/items`, { method: "POST", token, body: { name: itemName, description: description || null, price: Number(price), is_available: true, marks, translations } });
       await onChange();
     } catch (error) {
       toast(error instanceof ApiError ? error.message : "Stavka nije dodata.");
@@ -250,6 +251,12 @@ function MenuEditor({ venue, onChange }: { venue: Venue; onChange: () => Promise
   async function toggle(itemId: number, isAvailable: boolean) {
     if (!token) return;
     await api(`/business/menu/items/${itemId}`, { method: "PUT", token, body: { is_available: !isAvailable } });
+    await onChange();
+  }
+
+  async function setMarks(itemId: number, marks: string[]) {
+    if (!token) return;
+    await api(`/business/menu/items/${itemId}`, { method: "PUT", token, body: { marks } });
     await onChange();
   }
 
@@ -329,6 +336,7 @@ function MenuEditor({ venue, onChange }: { venue: Venue; onChange: () => Promise
           onMove={(direction) => moveCategory(category.id, direction)}
           onAdd={addItem}
           onToggle={toggle}
+          onMarks={setMarks}
           onRemoveItem={removeItem}
           onRemoveCategory={removeCategory}
           onMoveItem={(id, direction) => moveItem(category, id, direction)}
@@ -348,6 +356,7 @@ function CategoryBlock({
   onMove,
   onAdd,
   onToggle,
+  onMarks,
   onRemoveItem,
   onRemoveCategory,
   onMoveItem,
@@ -359,8 +368,9 @@ function CategoryBlock({
   canMoveUp: boolean;
   canMoveDown: boolean;
   onMove: (direction: -1 | 1) => Promise<void>;
-  onAdd: (category: MenuCategory, name: string, price: string, description: string, translations: CopyBag) => Promise<void>;
+  onAdd: (category: MenuCategory, name: string, price: string, description: string, translations: CopyBag, marks: string[]) => Promise<void>;
   onToggle: (id: number, available: boolean) => Promise<void>;
+  onMarks: (id: number, marks: string[]) => Promise<void>;
   onRemoveItem: (id: number) => Promise<void>;
   onRemoveCategory: (id: number) => Promise<void>;
   onMoveItem: (id: number, direction: -1 | 1) => Promise<void>;
@@ -373,6 +383,7 @@ function CategoryBlock({
   const [description, setDescription] = useState("");
   const [copy, setCopy] = useState<CopyBag>({});
   const [price, setPrice] = useState("");
+  const [marks, setMarks] = useState<string[]>([]);
 
   return (
     <section className="rounded-lg border border-line bg-paper p-4">
@@ -392,7 +403,8 @@ function CategoryBlock({
       </div>
       <ul className="mt-2 divide-y divide-line">
         {category.items?.map((item, index) => (
-          <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm">
+          <li key={item.id} className="space-y-1 py-3 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
             <span className={item.is_available ? "" : "text-muted"}>{item.name} · {formatPrice(Number(item.price))}</span>
             <span className="flex flex-wrap items-center gap-3">
               <button type="button" disabled={index === 0} onClick={() => onMoveItem(item.id, -1)}>{t("action.up")}</button>
@@ -404,10 +416,12 @@ function CategoryBlock({
               </label>
               <button type="button" onClick={() => onRemoveItem(item.id)}>{t("action.delete")}</button>
             </span>
+            </div>
+            <MenuMarkFields marks={item.marks ?? []} onChange={(next) => void onMarks(item.id, next)} />
           </li>
         ))}
       </ul>
-      <form data-setup={setupItem ? "menu-item" : undefined} className="mt-3 space-y-3" onSubmit={(event) => { event.preventDefault(); void onAdd(category, itemName, price, description, copy).then(() => { setItemName(""); setDescription(""); setCopy({}); setPrice(""); }); }}>
+      <form data-setup={setupItem ? "menu-item" : undefined} className="mt-3 space-y-3" onSubmit={(event) => { event.preventDefault(); void onAdd(category, itemName, price, description, copy, marks).then(() => { setItemName(""); setDescription(""); setCopy({}); setPrice(""); setMarks([]); }); }}>
         <CopyEditor
           fields={[
             { id: "name", label: t("field.item") },
@@ -418,6 +432,7 @@ function CategoryBlock({
           bag={copy}
           setBag={setCopy}
         />
+        <MenuMarkFields marks={marks} onChange={setMarks} setup={setupItem} />
         <div className="flex flex-wrap gap-2">
           <input className={inputClass + " max-w-32"} value={price} onChange={(event) => setPrice(event.target.value)} placeholder={t("field.price")} aria-label={t("field.price")} required />
           <Button type="submit" variant="secondary">{t("menu.addItem")}</Button>

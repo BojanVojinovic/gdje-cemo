@@ -165,6 +165,8 @@ class MenuController extends Controller
             'description' => ['nullable', 'string', 'max:1000'],
             'price' => [$required, 'numeric', 'min:0', 'max:9999'],
             'is_available' => ['sometimes', 'boolean'],
+            'marks' => ['sometimes', 'array', 'max:4'],
+            'marks.*' => ['distinct', 'string', 'in:spicy,vegetarian,vegan,gluten_free'],
             'translations' => ['sometimes', 'array'],
             'translations.*.name' => ['nullable', 'string', 'max:160'],
             'translations.*.description' => ['nullable', 'string', 'max:1000'],

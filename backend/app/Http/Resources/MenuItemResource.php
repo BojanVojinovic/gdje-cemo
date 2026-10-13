@@ -23,6 +23,7 @@ class MenuItemResource extends JsonResource
             'price' => $this->price,
             'image_url' => ImageService::url($this->image_path),
             'is_available' => $this->is_available,
+            'marks' => array_values($this->marks ?? []),
             'sort_order' => $this->sort_order,
             'category_id' => $this->menu_category_id,
         ];

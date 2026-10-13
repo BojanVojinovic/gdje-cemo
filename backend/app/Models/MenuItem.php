@@ -14,6 +14,7 @@ class MenuItem extends Model
         'price',
         'image_path',
         'is_available',
+        'marks',
         'sort_order',
         'translations',
     ];
@@ -23,6 +24,7 @@ class MenuItem extends Model
         return [
             'price' => 'float',
             'is_available' => 'boolean',
+            'marks' => 'array',
             'translations' => 'array',
         ];
     }

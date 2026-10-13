@@ -72,6 +72,11 @@ const phases: Phase[] = [
     steps: ["menu-category", "menu-station", "menu-add", "menu-item"].map((target) => ({ target, tab: "menu", href: venueHref("") })),
   },
   {
+    id: "marks",
+    needs: listing,
+    steps: [{ target: "menu-marks", tab: "menu", href: venueHref("") }],
+  },
+  {
     id: "bookings",
     needs: ["reservations"],
     steps: [
@@ -151,9 +156,10 @@ type GuideState = {
   knownFeatures: string[] | null;
   knownBusinessId: number | null;
   knownAddons: string[] | null;
+  knownPhaseIds: string[] | null;
 };
 
-const emptyState: GuideState = { decision: "pending", venueId: null, done: [], phase: null, step: 0, knownFeatures: null, knownBusinessId: null, knownAddons: null };
+const emptyState: GuideState = { decision: "pending", venueId: null, done: [], phase: null, step: 0, knownFeatures: null, knownBusinessId: null, knownAddons: null, knownPhaseIds: null };
 
 function storageKey(userId: number) {
   return `gdje-setup-guide:${userId}`;
@@ -183,7 +189,11 @@ export function SetupGuide() {
       return;
     }
     try {
-      setState({ ...emptyState, ...JSON.parse(raw) });
+      const parsed = { ...emptyState, ...JSON.parse(raw) } as GuideState;
+      if (parsed.knownPhaseIds == null && parsed.decision !== "pending") {
+        parsed.knownPhaseIds = phases.map((item) => item.id).filter((id) => id !== "marks");
+      }
+      setState(parsed);
     } catch {
       setState(emptyState);
     }
@@ -246,19 +256,19 @@ export function SetupGuide() {
       setState({ ...state, knownFeatures: features, knownAddons: addons, knownBusinessId: businessId });
       return;
     }
-    if (sameSet(known, features) && sameSet(knownAddons, addons)) return;
     const fresh = phases.filter((item) => allowed(item, features, addons) && !allowed(item, known, knownAddons));
-    if (fresh.length) {
-      setUpgrade((current) => {
-        const ids = fresh.map((item) => item.id);
-        return current && sameSet(current, ids) ? current : ids;
-      });
+    const visibleIds = phases.filter((item) => allowed(item, features, addons)).map((item) => item.id);
+    const knownPhases = state.knownPhaseIds ?? [];
+    const ids = [...new Set([...fresh.map((item) => item.id), ...visibleIds.filter((id) => !knownPhases.includes(id))])];
+    if (ids.length) {
+      setUpgrade((current) => (current && sameSet(current, ids) ? current : ids));
       return;
     }
+    if (sameSet(known, features) && sameSet(knownAddons, addons) && sameSet(knownPhases, visibleIds)) return;
     const currentPhase = phases.find((item) => item.id === state.phase);
     const phaseStill = currentPhase && allowed(currentPhase, features, addons) ? state.phase : null;
     setUpgrade(null);
-    setState({ ...state, knownFeatures: features, knownAddons: addons, knownBusinessId: businessId, phase: phaseStill, step: phaseStill ? state.step : 0 });
+    setState({ ...state, knownFeatures: features, knownAddons: addons, knownBusinessId: businessId, knownPhaseIds: visibleIds, phase: phaseStill, step: phaseStill ? state.step : 0 });
   }, [state, features, businessId]);
 
   const phase = phases.find((item) => item.id === state?.phase) ?? null;
@@ -318,7 +328,7 @@ export function SetupGuide() {
 
   function remember(next: GuideState): GuideState {
     if (!features || businessId == null) return next;
-    return { ...next, knownFeatures: features, knownAddons: addons, knownBusinessId: businessId };
+    return { ...next, knownFeatures: features, knownAddons: addons, knownBusinessId: businessId, knownPhaseIds: phases.filter((item) => allowed(item, features, addons)).map((item) => item.id) };
   }
 
   function start(phaseId: string, venueId = state?.venueId ?? (Number(pick || venues[0]?.id) || null)) {

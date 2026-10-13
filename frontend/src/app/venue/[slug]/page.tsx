@@ -6,6 +6,7 @@ import { ReviewSection, ReportButton } from "@/components/review-section";
 import { FollowButton } from "@/components/follow-button";
 import { VenueHospitality } from "@/components/venue-hospitality";
 import { Gallery } from "@/components/gallery";
+import { MenuMarks } from "@/components/menu-marks";
 import { api } from "@/lib/api";
 import { brandButtonStyle } from "@/lib/brand";
 import { formatPrice } from "@/lib/format";
@@ -160,6 +161,7 @@ export default async function VenuePage({ params }: { params: Promise<{ slug: st
                                 <p className="shrink-0 text-sm font-semibold">{formatPrice(Number(item.price))}</p>
                               </div>
                               {item.description ? <p className="mt-1 text-sm text-muted">{item.description}</p> : null}
+                              <MenuMarks marks={item.marks} />
                               {!item.is_available ? <p className="mt-1 text-xs text-coral">{t("venue.unavailable")}</p> : null}
                             </div>
                           </li>

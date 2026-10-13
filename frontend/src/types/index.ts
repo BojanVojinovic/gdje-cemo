@@ -46,6 +46,7 @@ export type MenuItem = {
   price: number;
   image_url: string | null;
   is_available: boolean;
+  marks?: string[];
   sort_order: number;
   category_id: number;
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useI18n } from "@/components/i18n-provider";
+import { MenuMarks } from "@/components/menu-marks";
 import { TableOrderSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
@@ -209,6 +210,7 @@ export default function TableOrderPage() {
                   <div className="min-w-0">
                     <p className={item.is_available ? "font-semibold" : "font-semibold text-muted line-through"}>{item.name}</p>
                     {item.description ? <p className="text-sm text-muted">{item.description}</p> : null}
+                    <MenuMarks marks={item.marks} />
                     <p className="text-sm">{formatPrice(Number(item.price))}</p>
                   </div>
                   <div className="flex items-center gap-2">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useI18n } from "@/components/i18n-provider";
+import { MenuMarks } from "@/components/menu-marks";
 import { InfoListSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
@@ -80,7 +81,7 @@ export default function DeliverPage() {
             <ul className="mt-2 space-y-2">
               {(category.items ?? []).filter((item) => item.is_available).map((item) => (
                 <li key={item.id} className="flex items-center justify-between gap-3 border border-line bg-paper px-3 py-2">
-                  <span className="text-sm">{item.name} · {item.price} €</span>
+                  <span className="text-sm">{item.name} · {item.price} €<MenuMarks marks={item.marks} /></span>
                   <input
                     type="number"
                     min={0}
