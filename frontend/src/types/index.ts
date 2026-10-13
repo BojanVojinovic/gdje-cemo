@@ -100,6 +100,7 @@ export type Venue = {
   verification_status: string;
   is_featured: boolean;
   offers_delivery?: boolean;
+  offers_loungers?: boolean;
   delivery_eta_minutes?: number | null;
   timezone: string;
   is_open: boolean;

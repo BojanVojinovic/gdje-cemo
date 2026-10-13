@@ -4,6 +4,7 @@ import { useI18n } from "@/components/i18n-provider";
 import { InfoListSkeleton } from "@/components/skeletons";
 import { Button, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
+import { formatPrice } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -37,6 +38,7 @@ type StaffVenue = {
   orders: StaffOrder[];
   requests: StaffRequest[];
   deliveries?: StaffDelivery[];
+  rentals?: { id: number; lounger: string | null; guest_name: string; seats: number; price: number; status: string }[];
 };
 
 const orderStatuses = ["pending", "confirmed", "preparing", "served", "cancelled"] as const;
@@ -91,6 +93,17 @@ export default function StaffPage() {
         body: { status, eta_minutes: minutes >= 5 ? minutes : undefined },
       });
       toast(t("staff.updated"));
+      await load();
+    } catch (error) {
+      toast(error instanceof ApiError ? error.message : t("api.failed"));
+    }
+  }
+
+  async function setRental(id: number, status: string) {
+    if (!token) return;
+    try {
+      await api(`/staff/lounger-rentals/${id}`, { method: "PUT", token, body: { status } });
+      toast(t("lounger.saved"));
       await load();
     } catch (error) {
       toast(error instanceof ApiError ? error.message : t("api.failed"));
@@ -160,7 +173,17 @@ export default function StaffPage() {
               </div>
             </article>
           ))}
-          {venue.orders.length === 0 && (venue.deliveries ?? []).length === 0 ? <p className="text-sm text-muted">{t("staff.noOrders")}</p> : null}
+          {(venue.rentals ?? []).map((rental) => (
+            <article key={`r-${rental.id}`} className="border border-line bg-paper p-4">
+              <p className="font-medium">{t("staff.rentals")} · {rental.lounger} · {rental.guest_name} · {rental.seats} · {formatPrice(rental.price)}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {rental.status === "pending" ? <Button onClick={() => void setRental(rental.id, "active")}>{t("lounger.confirm")}</Button> : null}
+                {rental.status === "active" ? <Button variant="secondary" onClick={() => void setRental(rental.id, "ended")}>{t("lounger.end")}</Button> : null}
+                <Button variant="ghost" onClick={() => void setRental(rental.id, "cancelled")}>{t("action.cancel")}</Button>
+              </div>
+            </article>
+          ))}
+          {venue.orders.length === 0 && (venue.deliveries ?? []).length === 0 && (venue.rentals ?? []).length === 0 ? <p className="text-sm text-muted">{t("staff.noOrders")}</p> : null}
           {venue.orders.map((order) => (
             <article key={order.id} className="border border-line bg-paper p-4">
               <p className="font-medium">{t("staff.table")} {order.table} · {t(`status.${order.status}`)}</p>

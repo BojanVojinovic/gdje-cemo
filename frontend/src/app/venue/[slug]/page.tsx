@@ -116,6 +116,7 @@ export default async function VenuePage({ params }: { params: Promise<{ slug: st
           <div className="mt-5 flex flex-wrap gap-2">
             <ReserveLink slug={venue.slug} style={brandButtonStyle(venue.brand_color, venue.brand_ink)} className="inline-flex min-h-11 items-center rounded-full bg-sea px-5 text-sm font-semibold text-snow">{t("venue.reserve")}</ReserveLink>
             {venue.offers_delivery ? <Link href={`/venue/${venue.slug}/deliver`} className="inline-flex min-h-11 items-center rounded-full border border-line px-5 text-sm font-semibold">{t("venue.orderDelivery")}</Link> : null}
+            {venue.offers_loungers ? <Link href={`/venue/${venue.slug}/loungers`} className="inline-flex min-h-11 items-center rounded-full border border-line px-5 text-sm font-semibold">{t("lounger.title")}</Link> : null}
             <a href="#meni" className="inline-flex min-h-11 items-center rounded-full border border-line px-5 text-sm font-semibold">{t("venue.menu")}</a>
           </div>
         </div>
@@ -123,6 +124,7 @@ export default async function VenuePage({ params }: { params: Promise<{ slug: st
       <div className="fixed inset-x-0 bottom-14 z-20 flex gap-2 border-t border-line bg-paper p-3 md:hidden">
         <ReserveLink slug={venue.slug} style={brandButtonStyle(venue.brand_color, venue.brand_ink)} className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full bg-sea text-sm font-semibold text-snow">{t("venue.reserveShort")}</ReserveLink>
         {venue.offers_delivery ? <Link href={`/venue/${venue.slug}/deliver`} className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-line text-sm font-semibold">{t("venue.orderDelivery")}</Link> : null}
+        {venue.offers_loungers ? <Link href={`/venue/${venue.slug}/loungers`} className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-line text-sm font-semibold">{t("lounger.title")}</Link> : null}
         <a href="#meni" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-line text-sm font-semibold">{t("venue.menu")}</a>
       </div>
 

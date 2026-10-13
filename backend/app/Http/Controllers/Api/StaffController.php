@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\DeliveryOrder;
+use App\Models\LoungerRental;
 use App\Models\Order;
 use App\Models\TableServiceRequest;
 use App\Models\VenueStaff;
@@ -23,7 +24,7 @@ class StaffController extends Controller
             ->get();
         $venueIds = $assignments->pluck('venue_id');
         $orders = Order::query()
-            ->with('items')
+            ->with('items', 'session:id,lounger_id')
             ->whereIn('venue_id', $venueIds)
             ->whereHas('session', fn ($session) => $session->where('status', 'active'))
             ->latest()
@@ -46,15 +47,27 @@ class StaffController extends Controller
             ->limit(40)
             ->get()
             ->groupBy('venue_id');
+        $rentals = LoungerRental::query()
+            ->with('lounger:id,name')
+            ->whereIn('venue_id', $venueIds)
+            ->whereDate('rental_date', now()->toDateString())
+            ->whereIn('status', ['pending', 'active'])
+            ->latest()
+            ->get()
+            ->groupBy('venue_id');
 
-        $venues = $assignments->map(function (VenueStaff $assignment) use ($orders, $requests, $deliveries) {
+        $venues = $assignments->map(function (VenueStaff $assignment) use ($orders, $requests, $deliveries, $rentals) {
             $roles = $assignment->roles ?? [];
             $seesAll = in_array('waiter', $roles, true);
+            $runsBeach = in_array('beach', $roles, true);
             $runsDeliveries = in_array('delivery', $roles, true);
             $stations = array_values(array_intersect($roles, ['kitchen', 'bar']));
-            $venueOrders = ($orders->get($assignment->venue_id) ?? collect())->map(function (Order $order) use ($seesAll, $stations) {
-                $items = $order->items->filter(function ($item) use ($seesAll, $stations) {
+            $venueOrders = ($orders->get($assignment->venue_id) ?? collect())->map(function (Order $order) use ($seesAll, $stations, $runsBeach) {
+                $items = $order->items->filter(function ($item) use ($seesAll, $stations, $runsBeach, $order) {
                     if ($seesAll) {
+                        return true;
+                    }
+                    if ($runsBeach && $order->session?->lounger_id) {
                         return true;
                     }
 
@@ -112,6 +125,16 @@ class StaffController extends Controller
                         ])->values(),
                     ];
                 })->filter()->values(),
+                'rentals' => $runsBeach
+                    ? ($rentals->get($assignment->venue_id) ?? collect())->map(fn (LoungerRental $rental) => [
+                        'id' => $rental->id,
+                        'lounger' => $rental->lounger?->name,
+                        'guest_name' => $rental->guest_name,
+                        'seats' => $rental->seats,
+                        'price' => round($rental->price_cents / 100, 2),
+                        'status' => $rental->status,
+                    ])->values()
+                    : [],
                 'requests' => $seesAll
                     ? ($requests->get($assignment->venue_id) ?? collect())->map(fn (TableServiceRequest $row) => [
                         'id' => $row->id,

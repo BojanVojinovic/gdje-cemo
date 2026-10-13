@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import { TableOrderSkeleton } from "@/components/skeletons";
 import { Button, Field, inputClass, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
@@ -36,6 +37,7 @@ function explain(error: unknown, fallback: string) {
 }
 
 type Scan = {
+  kind?: string;
   table: { id: number; name: string; zone: string | null; is_orderable: boolean };
   venue: { id: number; name: string; slug: string };
   session_id: number | null;
@@ -47,6 +49,7 @@ type PlacedOrder = { id: number; status: string; items: PlacedItem[] };
 export default function TableOrderPage() {
   const params = useParams<{ token: string }>();
   const { token } = useAuth();
+  const { t } = useI18n();
   const toast = useToast();
   const [scan, setScan] = useState<Scan | null>(null);
   const [missing, setMissing] = useState(false);
@@ -160,7 +163,7 @@ export default function TableOrderPage() {
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 pb-36">
       <header className="border-b border-line pb-4">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">{scan.venue.name}{scan.table.zone ? ` · ${scan.table.zone}` : ""}</p>
-        <h1 className="font-serif text-4xl">Sto {scan.table.name}</h1>
+        <h1 className="font-serif text-4xl">{scan.kind === "lounger" ? t("lounger.heading", { name: scan.table.name }) : t("table.heading", { name: scan.table.name })}</h1>
         <p className="mt-1 text-sm text-muted">Meni · Korpa · Trenutna narudžbina</p>
         <div className="mt-4 grid grid-cols-2 gap-2">
           <Button variant="secondary" onClick={() => void callStaff("waiter")} loading={calling === "waiter"} disabled={calling !== null || sending}>Pozovi konobara</Button>

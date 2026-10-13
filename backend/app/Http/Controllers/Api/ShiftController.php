@@ -7,6 +7,7 @@ use App\Models\ShiftSwap;
 use App\Models\StaffShift;
 use App\Models\Venue;
 use App\Services\ShiftService;
+use App\Services\SubscriptionService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,31 +25,41 @@ class ShiftController extends Controller
         ]);
     }
 
-    public function store(Request $request, Venue $venue, ShiftService $shifts): JsonResponse
+    public function store(Request $request, Venue $venue, ShiftService $shifts, SubscriptionService $subscriptions): JsonResponse
     {
         $this->authorize('update', $venue);
         $data = $request->validate([
             'user_id' => ['required', 'integer'],
-            'role' => ['nullable', 'in:waiter,bar,kitchen,delivery'],
+            'role' => ['nullable', 'in:waiter,bar,kitchen,delivery,beach'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
+        if (($data['role'] ?? null) !== 'beach' || ! $venue->offers_loungers) {
+            $venue->loadMissing('business');
+            $subscriptions->assertFeature($request->user(), $venue->business, 'staff');
+        }
         $shift = $shifts->create($venue, $data);
 
         return ApiResponse::success($shifts->payload($shift), 'Shift saved.', 201);
     }
 
-    public function update(Request $request, StaffShift $staffShift, ShiftService $shifts): JsonResponse
+    public function update(Request $request, StaffShift $staffShift, ShiftService $shifts, SubscriptionService $subscriptions): JsonResponse
     {
         $this->authorize('update', $staffShift->venue);
         $data = $request->validate([
             'user_id' => ['sometimes', 'integer'],
-            'role' => ['nullable', 'in:waiter,bar,kitchen,delivery'],
+            'role' => ['nullable', 'in:waiter,bar,kitchen,delivery,beach'],
             'starts_at' => ['sometimes', 'date'],
             'ends_at' => ['sometimes', 'date'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
+
+        $role = $data['role'] ?? $staffShift->role;
+        if ($role !== 'beach' || ! $staffShift->venue->offers_loungers) {
+            $staffShift->venue->loadMissing('business');
+            $subscriptions->assertFeature($request->user(), $staffShift->venue->business, 'staff');
+        }
 
         return ApiResponse::success($shifts->payload($shifts->update($staffShift, $data)), 'Shift updated.');
     }

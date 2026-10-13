@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class DiningSession extends Model
 {
     protected $fillable = [
-        'venue_id', 'venue_table_id', 'reservation_id', 'user_id', 'party_size', 'status',
+        'venue_id', 'venue_table_id', 'lounger_id', 'reservation_id', 'user_id', 'party_size', 'status',
         'table_name_snapshot', 'zone_name_snapshot', 'opened_at', 'closed_at',
     ];
 
@@ -30,6 +30,11 @@ class DiningSession extends Model
     public function table(): BelongsTo
     {
         return $this->belongsTo(VenueTable::class, 'venue_table_id');
+    }
+
+    public function lounger(): BelongsTo
+    {
+        return $this->belongsTo(Lounger::class);
     }
 
     public function reservation(): BelongsTo

@@ -17,7 +17,7 @@ type Step = {
   fill?: Fill;
 };
 
-type Phase = { id: string; needs: string[]; steps: Step[] };
+type Phase = { id: string; needs: string[]; addon?: string; steps: Step[] };
 
 type PlanRow = { slug: string; features?: string[] };
 type BusinessRow = { id: number; subscription: { status: string; plan: string | null } | null };
@@ -114,6 +114,12 @@ const phases: Phase[] = [
     needs: ["delivery"],
     steps: [{ target: "delivery-toggle", tab: "info", href: venueHref("") }],
   },
+  {
+    id: "loungers",
+    needs: [],
+    addon: "loungers",
+    steps: ["lounger-zone", "lounger-price", "lounger-water", "lounger-add", "lounger-canvas"].map((target) => ({ target, href: venueHref("/loungers") })),
+  },
 ];
 
 const openFeatures = ["listing", "reservations", "floor", "delivery", "staff", "content", "analytics"];
@@ -122,7 +128,8 @@ function sameSet(left: string[], right: string[]) {
   return left.length === right.length && left.every((item) => right.includes(item));
 }
 
-function allowed(phase: Phase, features: string[]) {
+function allowed(phase: Phase, features: string[], addons: string[]) {
+  if (phase.addon && !addons.includes(phase.addon)) return false;
   return phase.needs.every((need) => features.includes(need));
 }
 
@@ -143,9 +150,10 @@ type GuideState = {
   step: number;
   knownFeatures: string[] | null;
   knownBusinessId: number | null;
+  knownAddons: string[] | null;
 };
 
-const emptyState: GuideState = { decision: "pending", venueId: null, done: [], phase: null, step: 0, knownFeatures: null, knownBusinessId: null };
+const emptyState: GuideState = { decision: "pending", venueId: null, done: [], phase: null, step: 0, knownFeatures: null, knownBusinessId: null, knownAddons: null };
 
 function storageKey(userId: number) {
   return `gdje-setup-guide:${userId}`;
@@ -194,6 +202,13 @@ export function SetupGuide() {
         setPick((current) => current || String(response.data[0]?.id ?? ""));
       })
       .catch(() => undefined);
+    function reloadVenues() {
+      api<Venue[]>("/business/venues?per_page=50", { token })
+        .then((response) => setVenues(response.data))
+        .catch(() => undefined);
+    }
+    window.addEventListener("gdje-plan-changed", reloadVenues);
+    return () => window.removeEventListener("gdje-plan-changed", reloadVenues);
   }, [token, business]);
 
   useEffect(() => {
@@ -220,17 +235,19 @@ export function SetupGuide() {
   const venue = venues.find((item) => item.id === venueId) ?? null;
   const businessId = venue?.business_id ?? venue?.business?.id ?? (catalog?.businesses.length === 1 ? catalog.businesses[0].id : null);
   const features = catalog ? featuresFor(catalog, businessId) : null;
-  const visible = phases.filter((item) => (features ? allowed(item, features) : item.needs.every((need) => need === "listing" || need === "reservations")));
+  const addons = venue?.offers_loungers ? ["loungers"] : [];
+  const visible = phases.filter((item) => (features ? allowed(item, features, addons) : item.needs.every((need) => need === "listing" || need === "reservations") && !item.addon));
 
   useEffect(() => {
     if (!state || !features || businessId == null || state.decision === "pending") return;
     const known = state.knownFeatures;
-    if (known === null || state.knownBusinessId !== businessId) {
-      setState({ ...state, knownFeatures: features, knownBusinessId: businessId });
+    const knownAddons = state.knownAddons;
+    if (known === null || knownAddons === null || state.knownBusinessId !== businessId) {
+      setState({ ...state, knownFeatures: features, knownAddons: addons, knownBusinessId: businessId });
       return;
     }
-    if (sameSet(known, features)) return;
-    const fresh = phases.filter((item) => allowed(item, features) && !allowed(item, known));
+    if (sameSet(known, features) && sameSet(knownAddons, addons)) return;
+    const fresh = phases.filter((item) => allowed(item, features, addons) && !allowed(item, known, knownAddons));
     if (fresh.length) {
       setUpgrade((current) => {
         const ids = fresh.map((item) => item.id);
@@ -239,9 +256,9 @@ export function SetupGuide() {
       return;
     }
     const currentPhase = phases.find((item) => item.id === state.phase);
-    const phaseStill = currentPhase && allowed(currentPhase, features) ? state.phase : null;
+    const phaseStill = currentPhase && allowed(currentPhase, features, addons) ? state.phase : null;
     setUpgrade(null);
-    setState({ ...state, knownFeatures: features, knownBusinessId: businessId, phase: phaseStill, step: phaseStill ? state.step : 0 });
+    setState({ ...state, knownFeatures: features, knownAddons: addons, knownBusinessId: businessId, phase: phaseStill, step: phaseStill ? state.step : 0 });
   }, [state, features, businessId]);
 
   const phase = phases.find((item) => item.id === state?.phase) ?? null;
@@ -301,7 +318,7 @@ export function SetupGuide() {
 
   function remember(next: GuideState): GuideState {
     if (!features || businessId == null) return next;
-    return { ...next, knownFeatures: features, knownBusinessId: businessId };
+    return { ...next, knownFeatures: features, knownAddons: addons, knownBusinessId: businessId };
   }
 
   function start(phaseId: string, venueId = state?.venueId ?? (Number(pick || venues[0]?.id) || null)) {

@@ -5,6 +5,7 @@ import { StatGridSkeleton } from "@/components/skeletons";
 import { Button, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import type { Venue } from "@/types";
 import { useEffect, useState } from "react";
 
 type Plan = {
@@ -46,6 +47,7 @@ export default function BusinessPlansPage() {
   const [businessId, setBusinessId] = useState<number | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [venues, setVenues] = useState<Venue[]>([]);
 
   useEffect(() => {
     if (!token || !user || user.role === "customer") return;
@@ -55,6 +57,9 @@ export default function BusinessPlansPage() {
         setBusinessId((current) => current ?? response.data.businesses[0]?.id ?? null);
       })
       .catch((reason) => setError(reason instanceof ApiError ? reason.message : t("plan.failed")));
+    api<Venue[]>("/business/venues?per_page=50", { token })
+      .then((response) => setVenues(response.data))
+      .catch(() => undefined);
   }, [token, user, t]);
 
   const business = catalog?.businesses.find((row) => row.id === businessId) ?? catalog?.businesses[0] ?? null;
@@ -78,6 +83,21 @@ export default function BusinessPlansPage() {
       });
       toast(response.message ?? t("plan.done"));
       window.dispatchEvent(new CustomEvent("gdje-plan-changed"));
+    } catch (reason) {
+      toast(reason instanceof ApiError ? reason.message : t("plan.failed"));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function toggleLoungers(venue: Venue) {
+    if (!token) return;
+    setBusy(`lounger-${venue.id}`);
+    try {
+      await api(`/business/venues/${venue.id}/loungers`, { method: "PUT", token, body: { enabled: !venue.offers_loungers } });
+      setVenues((current) => current.map((row) => row.id === venue.id ? { ...row, offers_loungers: !row.offers_loungers } : row));
+      window.dispatchEvent(new CustomEvent("gdje-plan-changed"));
+      toast(t("lounger.saved"));
     } catch (reason) {
       toast(reason instanceof ApiError ? reason.message : t("plan.failed"));
     } finally {
@@ -170,6 +190,32 @@ export default function BusinessPlansPage() {
           );
         })}
       </div>
+
+      <section className="space-y-3">
+        <h2 className="font-serif text-3xl">{t("addon.title")}</h2>
+        <p className="text-sm text-muted">{t("addon.body")}</p>
+        <article className="border border-line bg-paper p-5">
+          <h3 className="font-serif text-2xl">{t("addon.loungers")}</h3>
+          <p className="mt-2 text-sm leading-6 text-ink/85">{t("addon.loungersBody")}</p>
+          <ul className="mt-4 space-y-3">
+            {venues.map((venue) => (
+              <li key={venue.id} className="flex flex-wrap items-center justify-between gap-3">
+                <span className="text-sm font-medium">{venue.name}</span>
+                <span className="flex items-center gap-3">
+                  {venue.offers_loungers ? <a href={`/business/venues/${venue.id}/loungers`} className="text-sm text-sea">{t("lounger.title")}</a> : null}
+                  <Button
+                    variant={venue.offers_loungers ? "secondary" : "primary"}
+                    disabled={busy !== null}
+                    onClick={() => void toggleLoungers(venue)}
+                  >
+                    {venue.offers_loungers ? t("addon.on") : t("addon.off")}
+                  </Button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </article>
+      </section>
 
       {active ? (
         <Button variant="ghost" disabled={busy !== null} loading={busy === "cancel"} onClick={cancel}>

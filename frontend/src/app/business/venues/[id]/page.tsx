@@ -69,6 +69,7 @@ export default function ManageVenuePage() {
         </div>
         <div className="flex flex-wrap gap-3 text-sm">
           <Link href={`/business/venues/${venue.id}/floor-plan`} className="text-sea">{t("venue.floor")}</Link>
+          {venue.offers_loungers ? <Link href={`/business/venues/${venue.id}/loungers`} className="text-sea">{t("lounger.title")}</Link> : null}
           <Link href={`/business/venues/${venue.id}/tables`} className="text-sea">{t("venue.tables")}</Link>
           <Link href={`/venue/${venue.slug}`} className="text-sea">{t("brand.title")}</Link>
         </div>
@@ -465,7 +466,7 @@ function Reviews({ venueId, reviews, setReviews }: { venueId: number; reviews: R
   );
 }
 
-const staffRoleIds = ["waiter", "bar", "kitchen", "delivery"] as const;
+const staffRoleIds = ["waiter", "bar", "kitchen", "delivery", "beach"] as const;
 
 function StaffPanel({ venueId }: { venueId: number }) {
   const { token } = useAuth();

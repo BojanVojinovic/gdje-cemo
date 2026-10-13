@@ -7,6 +7,7 @@ use App\Enums\TableStatus;
 use App\Http\Controllers\Controller;
 use App\Models\DiningSession;
 use App\Models\DiningSessionGuest;
+use App\Models\LoungerQrCode;
 use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\Reservation;
@@ -30,21 +31,21 @@ class DiningController extends Controller
 {
     public function scan(string $token): JsonResponse
     {
-        $code = TableQrCode::query()->with('table.venue', 'table.zone')->where('token', $token)->where('is_active', true)->firstOrFail();
-        $table = $code->table;
-        $session = DiningSession::query()->where('venue_table_id', $table->id)->where('status', 'active')->first();
+        [$place, $kind] = $this->place($token);
+        $session = $this->openPlaceSession($place, $kind);
 
         return ApiResponse::success([
+            'kind' => $kind,
             'table' => [
-                'id' => $table->id,
-                'name' => $table->name,
-                'zone' => $table->zone?->name,
-                'is_orderable' => $table->is_orderable && $table->is_active,
+                'id' => $place->id,
+                'name' => $place->name,
+                'zone' => $place->zone?->name,
+                'is_orderable' => $place->is_orderable && $place->is_active,
             ],
             'venue' => [
-                'id' => $table->venue->id,
-                'name' => $table->venue->name,
-                'slug' => $table->venue->slug,
+                'id' => $place->venue->id,
+                'name' => $place->venue->name,
+                'slug' => $place->venue->slug,
             ],
             'session_id' => $session?->id,
         ]);
@@ -53,42 +54,46 @@ class DiningController extends Controller
     public function openSession(Request $request, string $token): JsonResponse
     {
         $actor = $this->actor($request);
-        $code = TableQrCode::query()->with('table.zone', 'table.venue')->where('token', $token)->where('is_active', true)->firstOrFail();
-        $table = $code->table;
-        if (! $table->is_active) {
+        [$place, $kind] = $this->place($token);
+        if (! $place->is_active) {
             throw ValidationException::withMessages(['table' => 'Ovaj sto trenutno nije dostupan.']);
         }
 
-        $session = DiningSession::query()->where('venue_table_id', $table->id)->where('status', 'active')->first();
+        $session = $this->openPlaceSession($place, $kind);
         $plain = $request->filled('guest_token') ? (string) $request->input('guest_token') : null;
         $guest = ($session && $plain) ? $this->findGuest($session, $plain) : null;
 
         if (! $session) {
-            $reservation = $actor
+            $reservation = ($actor && $kind === 'table')
                 ? Reservation::query()
                     ->where('user_id', $actor->id)
                     ->where('status', ReservationStatus::Seated)
-                    ->whereJsonContains('table_ids', $table->id)
+                    ->whereJsonContains('table_ids', $place->id)
                     ->first()
                 : null;
             $session = DiningSession::query()->create([
-                'venue_id' => $table->venue_id,
-                'venue_table_id' => $table->id,
+                'venue_id' => $place->venue_id,
+                'venue_table_id' => $kind === 'table' ? $place->id : null,
+                'lounger_id' => $kind === 'lounger' ? $place->id : null,
                 'reservation_id' => $reservation?->id,
                 'user_id' => $actor?->id,
                 'party_size' => $reservation?->party_size ?? 1,
                 'status' => 'active',
-                'table_name_snapshot' => $table->name,
-                'zone_name_snapshot' => $table->zone?->name,
+                'table_name_snapshot' => $place->name,
+                'zone_name_snapshot' => $place->zone?->name,
                 'opened_at' => now(),
             ]);
-            $table->update(['status' => TableStatus::Occupied]);
+            if ($kind === 'table') {
+                $place->update(['status' => TableStatus::Occupied]);
+            } elseif ($place->status !== 'blocked' && $place->status !== 'rented') {
+                $place->update(['status' => 'occupied']);
+            }
         } elseif ($actor && ! $session->user_id) {
             $session->update(['user_id' => $actor->id]);
         }
 
         if (! $guest) {
-            $mintKey = 'table-guests:'.$table->id;
+            $mintKey = 'table-guests:'.$kind.':'.$place->id;
             if ((int) Cache::get($mintKey, 0) >= 6) {
                 throw ValidationException::withMessages(['table' => 'Previše uređaja je povezano na ovaj sto. Pozovite osoblje.']);
             }
@@ -112,7 +117,7 @@ class DiningController extends Controller
         if ($session->status !== 'active') {
             throw ValidationException::withMessages(['session' => 'Sesija je zatvorena.']);
         }
-        $table = $session->table;
+        $table = $session->lounger_id ? $session->lounger : $session->table;
         if (! $table || ! $table->is_orderable || ! $table->is_active) {
             throw ValidationException::withMessages(['items' => 'Ovaj sto trenutno ne prima narudžbine.']);
         }
@@ -176,7 +181,7 @@ class DiningController extends Controller
 
         $guard->remember(
             $guest ? 'g'.$guest->id : ($actor ? 'u'.$actor->id : 'ip'.$request->ip()),
-            (int) $session->venue_table_id,
+            (int) ($session->venue_table_id ?: $session->lounger_id),
             (string) $request->ip(),
         );
         $this->notifyOrderStaff($order, $notifications);
@@ -293,10 +298,38 @@ class DiningController extends Controller
         } else {
             $session->update(['status' => 'closed', 'closed_at' => now()]);
             $session->table?->update(['status' => TableStatus::Available]);
+            if ($session->lounger && $session->lounger->status !== 'blocked') {
+                $stillRented = $session->lounger->rentals()->whereDate('rental_date', now()->toDateString())->where('status', 'active')->exists();
+                $session->lounger->update(['status' => $stillRented ? 'rented' : 'available']);
+            }
         }
         $audit->record($request->user(), 'session.closed', $session);
 
         return ApiResponse::success(null, 'Sesija je zatvorena.');
+    }
+
+    /** @return array{0: \App\Models\VenueTable|\App\Models\Lounger, 1: string} */
+    private function place(string $token): array
+    {
+        $tableCode = TableQrCode::query()->with('table.venue', 'table.zone')->where('token', $token)->where('is_active', true)->first();
+        if ($tableCode?->table) {
+            return [$tableCode->table, 'table'];
+        }
+        $code = LoungerQrCode::query()->with('lounger.venue', 'lounger.zone')->where('token', $token)->where('is_active', true)->firstOrFail();
+        if (! $code->lounger?->venue?->offers_loungers) {
+            abort(404);
+        }
+
+        return [$code->lounger, 'lounger'];
+    }
+
+    private function openPlaceSession(object $place, string $kind): ?DiningSession
+    {
+        $query = DiningSession::query()->where('status', 'active');
+
+        return $kind === 'lounger'
+            ? $query->where('lounger_id', $place->id)->first()
+            : $query->where('venue_table_id', $place->id)->first();
     }
 
     private function actor(Request $request): ?User

@@ -40,9 +40,13 @@ class StaffController extends Controller
         }
 
         $alreadyThere = VenueStaff::query()->where('user_id', $user->id)->where('venue_id', $venue->id)->exists();
-        if (! $alreadyThere) {
+        $onlyBeach = $data['roles'] === ['beach'];
+        if (! $alreadyThere && ! ($onlyBeach && $venue->offers_loungers)) {
             $venue->loadMissing('business');
             $subscriptions->assertStaffSlot($request->user(), $venue->business);
+        } elseif (! $onlyBeach || ! $venue->offers_loungers) {
+            $venue->loadMissing('business');
+            $subscriptions->assertFeature($request->user(), $venue->business, 'staff');
         }
 
         $row = VenueStaff::query()->updateOrCreate(
@@ -80,7 +84,7 @@ class StaffController extends Controller
         return $request->validate([
             'email' => ['required', 'email', 'max:255'],
             'roles' => ['required', 'array', 'min:1'],
-            'roles.*' => ['distinct', 'in:waiter,bar,kitchen,delivery'],
+            'roles.*' => ['distinct', 'in:waiter,bar,kitchen,delivery,beach'],
         ]);
     }
 
@@ -90,6 +94,7 @@ class StaffController extends Controller
             'waiter' => 'Konobar',
             'bar' => 'Šank',
             'delivery' => 'Dostava',
+            'beach' => 'Ležaljke',
             default => 'Kuhinja',
         };
     }
