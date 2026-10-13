@@ -3,6 +3,7 @@ import es from "@/lib/locales/es";
 import fr from "@/lib/locales/fr";
 import it from "@/lib/locales/it";
 import ru from "@/lib/locales/ru";
+import { setupCopy } from "@/lib/setup-copy";
 
 export const locales = ["en", "cnr", "ru", "it", "de", "fr", "es"] as const;
 export type Locale = (typeof locales)[number];
@@ -1347,7 +1348,7 @@ const cnr: Record<string, string> = {
 const dictionaries: Record<Locale, Record<string, string>> = { en, cnr, ru, it, de, fr, es };
 
 export function translate(locale: Locale, key: string, vars?: Record<string, string | number>): string {
-  let text = dictionaries[locale][key] ?? dictionaries.en[key] ?? key;
+  let text = dictionaries[locale][key] ?? setupCopy[locale]?.[key] ?? dictionaries.en[key] ?? setupCopy.en[key] ?? key;
   if (vars) {
     for (const [name, value] of Object.entries(vars)) {
       text = text.replaceAll(`{${name}}`, String(value));

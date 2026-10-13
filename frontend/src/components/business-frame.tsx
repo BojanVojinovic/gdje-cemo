@@ -3,6 +3,7 @@
 import { DashboardNav } from "@/components/dashboard-nav";
 import { useI18n } from "@/components/i18n-provider";
 import { RoleGate } from "@/components/role-gate";
+import { SetupGuide } from "@/components/setup-guide";
 import { useAuth } from "@/lib/auth";
 
 export function BusinessFrame({ children }: { children: React.ReactNode }) {
@@ -37,6 +38,7 @@ export function BusinessFrame({ children }: { children: React.ReactNode }) {
         </aside>
         <div>{children}</div>
       </RoleGate>
+      <SetupGuide />
     </div>
   );
 }

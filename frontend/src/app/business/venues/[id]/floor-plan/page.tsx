@@ -135,17 +135,18 @@ export default function FloorPlanEditorPage() {
         <div className="flex flex-wrap gap-2">
           <Link href={`/business/venues/${params.id}/tables`} className="text-sm text-sea">{t("floor.list")}</Link>
           <Button onClick={() => void addTable("square")}>{t("floor.newTable")}</Button>
-          <Button variant="secondary" onClick={() => void saveLayout()} disabled={!tables.length}>{t("action.save")}</Button>
+          <span data-setup="floor-save"><Button variant="secondary" onClick={() => void saveLayout()} disabled={!tables.length}>{t("action.save")}</Button></span>
         </div>
       </div>
       <TableLegend />
       <div className="grid gap-4 xl:grid-cols-[180px_minmax(0,1fr)_300px]">
-        <aside className="space-y-2 border border-line bg-paper p-3">
+        <aside data-setup="floor-tools" className="space-y-2 border border-line bg-paper p-3">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">{t("floor.tools")}</p>
           {(["square", "round", "rectangle", "oval"] as const).map((shape) => (
             <Button key={shape} variant="secondary" className="w-full" onClick={() => void addTable(shape)}>{t(`shape.${shape}`)}</Button>
           ))}
         </aside>
+        <div data-setup="floor-canvas">
         <FloorCanvas
           tables={tables}
           width={plan.floor_plan.canvas_width}
@@ -156,6 +157,7 @@ export default function FloorPlanEditorPage() {
           onSelect={setSelectedId}
           onChange={patchLocal}
         />
+        </div>
         <aside className="space-y-4 border border-line bg-paper p-4">
           {selected ? (
             <div className="space-y-3">
@@ -219,10 +221,10 @@ export default function FloorPlanEditorPage() {
               </li>
             ))}
           </ul>
-          <Field label={t("floor.newZone")}><input className={inputClass} value={zoneName} onChange={(event) => setZoneName(event.target.value)} /></Field>
+          <div data-setup="floor-zone"><Field label={t("floor.newZone")}><input className={inputClass} value={zoneName} onChange={(event) => setZoneName(event.target.value)} /></Field></div>
           <Button type="submit">{t("action.add")}</Button>
         </form>
-        <form onSubmit={saveSettings} className="space-y-3 rounded-lg border border-line p-4">
+        <form data-setup="floor-bookings" onSubmit={saveSettings} className="space-y-3 rounded-lg border border-line p-4">
           <h2 className="font-serif text-2xl">{t("business.reservations")}</h2>
           <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="enabled" defaultChecked={plan.settings.enabled} /> {t("floor.reservationsOn")}</label>
           <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="auto_confirm" defaultChecked={plan.settings.auto_confirm} /> {t("floor.autoConfirm")}</label>

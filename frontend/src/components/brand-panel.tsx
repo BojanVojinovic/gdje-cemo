@@ -97,14 +97,14 @@ export function BrandPanel({ venue, onChange }: { venue: Venue; onChange: () => 
           <p className="mt-1 text-sm text-muted">{t("brand.lead")}</p>
         </div>
         <CopyEditor
-          fields={[{ id: "tagline", label: t("brand.tagline"), required: false }]}
+          fields={[{ id: "tagline", label: t("brand.tagline"), required: false, setup: "look-tagline" }]}
           source={{ tagline }}
           setSource={(_id, value) => setTagline(value.slice(0, 160))}
           bag={translations}
           setBag={setTranslations}
         />
         <p className="text-xs text-muted">{t("brand.taglineHint")}</p>
-        <label className="flex items-center gap-2 text-sm">
+        <label data-setup="look-color" className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={useColor} onChange={(event) => setUseColor(event.target.checked)} />
           {t("brand.useColor")}
         </label>
@@ -114,10 +114,10 @@ export function BrandPanel({ venue, onChange }: { venue: Venue; onChange: () => 
           </Field>
         ) : null}
         <div className="flex flex-wrap gap-2">
-          <Button type="submit" loading={saving}>{t("brand.save")}</Button>
+          <span data-setup="look-save"><Button type="submit" loading={saving}>{t("brand.save")}</Button></span>
           <Button type="button" variant="secondary" onClick={() => void clearLook()}>{t("brand.reset")}</Button>
         </div>
-        <div className="space-y-2 border border-line bg-paper p-4">
+        <div data-setup="look-logo" className="space-y-2 border border-line bg-paper p-4">
           <p className="text-sm font-semibold">{t("brand.logo")}</p>
           <p className="text-xs text-muted">{t("brand.logoHint")}</p>
           {venue.logo_url ? <img src={venue.logo_url} alt="" className="h-16 w-16 rounded-xl border border-line object-contain" /> : null}

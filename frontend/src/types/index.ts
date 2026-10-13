@@ -109,6 +109,7 @@ export type Venue = {
   amenities?: Amenity[];
   images?: VenueImage[];
   menu?: Menu | null;
+  business_id?: number | null;
   business?: { id: number; name: string; status: string } | null;
   created_at?: string;
 };

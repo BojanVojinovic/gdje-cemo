@@ -67,6 +67,23 @@ export default function ContentPage() {
     void load().catch(() => setLoading(false));
   }, [token, filter, month]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    function apply(detail: { type: string; title: string; body: string }) {
+      setForm((current) => ({ ...current, type: detail.type, title: detail.title, body: detail.body, status: "draft" }));
+    }
+    const stored = sessionStorage.getItem("gdje-setup-fill");
+    if (stored) {
+      apply(JSON.parse(stored) as { type: string; title: string; body: string });
+      sessionStorage.removeItem("gdje-setup-fill");
+    }
+    function onFill(event: Event) {
+      apply((event as CustomEvent<{ type: string; title: string; body: string }>).detail);
+      sessionStorage.removeItem("gdje-setup-fill");
+    }
+    window.addEventListener("gdje-setup-fill", onFill);
+    return () => window.removeEventListener("gdje-setup-fill", onFill);
+  }, []);
+
   const days = useMemo(() => calendarDays(month), [month]);
 
   async function create(event: React.FormEvent) {
@@ -161,13 +178,15 @@ export default function ContentPage() {
         <Field label={t("content.place")}>
           <ComboBox value={form.venue_id} onChange={(value) => setForm({ ...form, venue_id: value })} options={venues.map((venue) => ({ value: String(venue.id), label: venue.name }))} />
         </Field>
-        <Field label={t("content.kind")}>
-          <ComboBox value={form.type} onChange={(value) => setForm({ ...form, type: value })} options={types.map((type) => ({ value: type, label: t(`content.type.${type}`) }))} />
-        </Field>
+        <div data-setup={form.type === "event" ? "event-kind" : "notice-kind"}>
+          <Field label={t("content.kind")}>
+            <ComboBox value={form.type} onChange={(value) => setForm({ ...form, type: value })} options={types.map((type) => ({ value: type, label: t(`content.type.${type}`) }))} />
+          </Field>
+        </div>
         <CopyEditor
           fields={[
-            { id: "title", label: t("content.title") },
-            { id: "body", label: t("content.text"), rows: 4, required: false },
+            { id: "title", label: t("content.title"), setup: form.type === "event" ? "event-title" : "notice-title" },
+            { id: "body", label: t("content.text"), rows: 4, required: false, setup: form.type === "event" ? "event-body" : "notice-body" },
             ...(form.type === "event" ? [{ id: "event_category", label: t("field.category"), required: false }] : []),
             ...(form.type === "promotion" || form.type === "special_offer" ? [{ id: "terms", label: t("content.terms"), required: false }] : []),
           ]}
@@ -187,7 +206,7 @@ export default function ContentPage() {
         <Field label={t("content.expires")}><input type="datetime-local" className={inputClass} value={form.expires_at} onChange={(event) => setForm({ ...form, expires_at: event.target.value })} /></Field>
         {form.type === "event" ? (
           <>
-            <Field label={t("content.start")}><input type="datetime-local" className={inputClass} value={form.event_start_at} onChange={(event) => setForm({ ...form, event_start_at: event.target.value })} /></Field>
+            <div data-setup="event-start"><Field label={t("content.start")}><input type="datetime-local" className={inputClass} value={form.event_start_at} onChange={(event) => setForm({ ...form, event_start_at: event.target.value })} /></Field></div>
             <Field label={t("content.end")}><input type="datetime-local" className={inputClass} value={form.event_end_at} onChange={(event) => setForm({ ...form, event_end_at: event.target.value })} /></Field>
             <Field label={t("field.price")}><input type="number" min={0} className={inputClass} value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} /></Field>
             <Field label={t("content.capacity")}><input type="number" min={1} className={inputClass} value={form.capacity} onChange={(event) => setForm({ ...form, capacity: event.target.value })} /></Field>
@@ -210,7 +229,7 @@ export default function ContentPage() {
           </>
         ) : null}
         {form.type === "announcement" ? <Field label={t("content.priority")}><input type="number" min={0} max={5} className={inputClass} value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value })} /></Field> : null}
-        <Button type="submit">{t("action.save")}</Button>
+        <span data-setup={form.type === "event" ? "event-save" : "notice-save"}><Button type="submit">{t("action.save")}</Button></span>
       </form>
       <ul className="space-y-3">
         {items.map((item) => (

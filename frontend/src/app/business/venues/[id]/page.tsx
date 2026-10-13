@@ -33,6 +33,19 @@ export default function ManageVenuePage() {
 
   useEffect(() => { void load().catch(() => undefined); }, [token, params.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    const stored = sessionStorage.getItem("gdje-setup-tab");
+    if (stored === "info" || stored === "look" || stored === "photos" || stored === "hours" || stored === "menu" || stored === "staff" || stored === "reviews") {
+      setTab(stored);
+    }
+    function onTab(event: Event) {
+      const next = (event as CustomEvent<string>).detail;
+      if (next === "info" || next === "look" || next === "photos" || next === "hours" || next === "menu" || next === "staff" || next === "reviews") setTab(next);
+    }
+    window.addEventListener("gdje-setup-tab", onTab);
+    return () => window.removeEventListener("gdje-setup-tab", onTab);
+  }, []);
+
   if (!detail) {
     return (
       <div className="space-y-5" aria-busy="true">
@@ -127,11 +140,11 @@ function Photos({ venue, onChange }: { venue: Venue; onChange: () => Promise<voi
 
   return (
     <div className="space-y-4 rounded-lg border border-line bg-paper p-5">
-      <label className="block text-sm">{t("photo.cover")}
+      <label data-setup="photos-cover" className="block text-sm">{t("photo.cover")}
         <input type="file" accept="image/jpeg,image/png,image/webp" className="mt-2 block" onChange={(event) => { if (event.target.files) void upload(`/business/venues/${venue.id}/cover`, event.target.files, "image"); }} />
       </label>
       {venue.cover_url ? <img src={venue.cover_url} alt="" className="h-40 w-full rounded-2xl object-cover" /> : null}
-      <label className="block text-sm">{t("photo.gallery")}
+      <label data-setup="photos-gallery" className="block text-sm">{t("photo.gallery")}
         <input type="file" multiple accept="image/jpeg,image/png,image/webp" className="mt-2 block" onChange={(event) => { if (event.target.files) void upload(`/business/venues/${venue.id}/images`, event.target.files, "images"); }} />
       </label>
       <div className="grid grid-cols-3 gap-2">
@@ -185,8 +198,8 @@ function Hours({ venue, onChange }: { venue: Venue; onChange: () => Promise<void
 
   return (
     <div className="space-y-3 rounded-lg border border-line bg-paper p-5">
-      {days.map((day) => (
-        <div key={day.day} className="grid items-center gap-2 sm:grid-cols-[140px_1fr_auto]">
+      {days.map((day, dayIndex) => (
+        <div key={day.day} data-setup={dayIndex === 0 ? "hours-day" : undefined} className="grid items-center gap-2 sm:grid-cols-[140px_1fr_auto]">
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={day.closed} onChange={() => setDays((current) => current.map((item) => item.day === day.day ? { ...item, closed: !item.closed, intervals: item.intervals.length ? item.intervals : [{ opens_at: "09:00", closes_at: "17:00" }] } : item))} /> {t(`day.${day.day}`)} {t("hours.closed")}</label>
           <div className="flex flex-wrap gap-2">
             {(day.intervals.length ? day.intervals : [{ opens_at: "09:00", closes_at: "17:00" }]).map((interval, index) => (
@@ -199,7 +212,7 @@ function Hours({ venue, onChange }: { venue: Venue; onChange: () => Promise<void
           <button type="button" className="text-sm text-sea" onClick={() => setDays((current) => current.map((item) => item.day === day.day ? { ...item, closed: false, intervals: [...(item.intervals.length ? item.intervals : [{ opens_at: "09:00", closes_at: "17:00" }]), { opens_at: "17:00", closes_at: "23:00" }] } : item))}>{t("hours.interval")}</button>
         </div>
       ))}
-      <Button onClick={save}>{t("hours.save")}</Button>
+      <div data-setup="hours-save"><Button onClick={save}>{t("hours.save")}</Button></div>
     </div>
   );
 }
@@ -296,13 +309,13 @@ function MenuEditor({ venue, onChange }: { venue: Venue; onChange: () => Promise
   return (
     <div className="space-y-4">
       <form onSubmit={addCategory} className="space-y-3">
-        <CopyEditor fields={[{ id: "name", label: t("field.menuCategory") }]} source={{ name }} setSource={(_id, value) => setName(value)} bag={copy} setBag={setCopy} />
+        <CopyEditor fields={[{ id: "name", label: t("field.menuCategory"), setup: "menu-category" }]} source={{ name }} setSource={(_id, value) => setName(value)} bag={copy} setBag={setCopy} />
         <div className="flex flex-wrap gap-2">
-          <select className={inputClass + " max-w-40"} value={station} onChange={(event) => setStation(event.target.value as "kitchen" | "bar")} aria-label={t("field.kitchen")}>
+          <select data-setup="menu-station" className={inputClass + " max-w-40"} value={station} onChange={(event) => setStation(event.target.value as "kitchen" | "bar")} aria-label={t("field.kitchen")}>
             <option value="kitchen">{t("field.kitchen")}</option>
             <option value="bar">{t("field.bar")}</option>
           </select>
-          <Button type="submit">{t("action.add")}</Button>
+          <span data-setup="menu-add"><Button type="submit">{t("action.add")}</Button></span>
         </div>
       </form>
       {categories.length === 0 ? <p className="text-sm text-muted">{t("menu.empty")}</p> : null}
@@ -320,6 +333,7 @@ function MenuEditor({ venue, onChange }: { venue: Venue; onChange: () => Promise
           onMoveItem={(id, direction) => moveItem(category, id, direction)}
           onImage={uploadItemImage}
           onStation={(next) => setCategoryStation(category, next)}
+          setupItem={index === 0}
         />
       ))}
     </div>
@@ -338,6 +352,7 @@ function CategoryBlock({
   onMoveItem,
   onImage,
   onStation,
+  setupItem,
 }: {
   category: MenuCategory;
   canMoveUp: boolean;
@@ -350,6 +365,7 @@ function CategoryBlock({
   onMoveItem: (id: number, direction: -1 | 1) => Promise<void>;
   onImage: (id: number, file: File) => Promise<void>;
   onStation: (station: "kitchen" | "bar") => Promise<void>;
+  setupItem?: boolean;
 }) {
   const { t } = useI18n();
   const [itemName, setItemName] = useState("");
@@ -390,7 +406,7 @@ function CategoryBlock({
           </li>
         ))}
       </ul>
-      <form className="mt-3 space-y-3" onSubmit={(event) => { event.preventDefault(); void onAdd(category, itemName, price, description, copy).then(() => { setItemName(""); setDescription(""); setCopy({}); setPrice(""); }); }}>
+      <form data-setup={setupItem ? "menu-item" : undefined} className="mt-3 space-y-3" onSubmit={(event) => { event.preventDefault(); void onAdd(category, itemName, price, description, copy).then(() => { setItemName(""); setDescription(""); setCopy({}); setPrice(""); }); }}>
         <CopyEditor
           fields={[
             { id: "name", label: t("field.item") },
@@ -498,10 +514,12 @@ function StaffPanel({ venueId }: { venueId: number }) {
   return (
     <div className="space-y-4">
       <form onSubmit={(event) => void save(event)} className="space-y-3 rounded-lg border border-line bg-paper p-4">
-        <Field label={t("staff.email")}>
-          <input className={inputClass} type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="ime@email.com" required />
-        </Field>
-        <div className="flex flex-wrap gap-4 text-sm">
+        <div data-setup="staff-email">
+          <Field label={t("staff.email")}>
+            <input className={inputClass} type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="ime@email.com" required />
+          </Field>
+        </div>
+        <div data-setup="staff-roles" className="flex flex-wrap gap-4 text-sm">
           {staffRoles.map((role) => (
             <label key={role.id} className="flex min-h-11 items-center gap-2">
               <input
@@ -513,7 +531,7 @@ function StaffPanel({ venueId }: { venueId: number }) {
             </label>
           ))}
         </div>
-        <Button type="submit" disabled={roles.length === 0}>{t("staff.add")}</Button>
+        <span data-setup="staff-add"><Button type="submit" disabled={roles.length === 0}>{t("staff.add")}</Button></span>
       </form>
       {loading ? <FieldSkeleton /> : null}
       {!loading ? (

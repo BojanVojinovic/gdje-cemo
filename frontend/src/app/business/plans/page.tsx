@@ -77,6 +77,7 @@ export default function BusinessPlansPage() {
         businesses: current.businesses.map((row) => row.id === business.id ? { ...row, subscription: response.data } : row),
       });
       toast(response.message ?? t("plan.done"));
+      window.dispatchEvent(new CustomEvent("gdje-plan-changed"));
     } catch (reason) {
       toast(reason instanceof ApiError ? reason.message : t("plan.failed"));
     } finally {
@@ -99,6 +100,7 @@ export default function BusinessPlansPage() {
         businesses: current.businesses.map((row) => row.id === business.id ? { ...row, subscription: response.data } : row),
       });
       toast(response.message ?? t("plan.cancelDone"));
+      window.dispatchEvent(new CustomEvent("gdje-plan-changed"));
     } catch (reason) {
       toast(reason instanceof ApiError ? reason.message : t("plan.failed"));
     } finally {

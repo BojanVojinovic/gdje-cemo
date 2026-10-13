@@ -73,7 +73,7 @@ class ReservationController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = Reservation::query()->with(['venue:id,name,slug', 'user:id,first_name,last_name,phone'])->latest('start_at');
+        $query = Reservation::query()->with(['venue:id,name,slug,business_id', 'user:id,first_name,last_name,phone'])->latest('start_at');
         $this->scopeOwned($request, $query);
         if ($date = $request->query('date')) {
             $query->whereDate('start_at', $date);

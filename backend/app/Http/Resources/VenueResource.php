@@ -84,6 +84,7 @@ class VenueResource extends JsonResource
 
                 return $menu ? new MenuResource($menu) : null;
             }),
+            'business_id' => $this->business_id,
             'business' => $this->whenLoaded('business', fn () => [
                 'id' => $this->business->id,
                 'name' => $this->business->name,

@@ -90,14 +90,14 @@ export default function ReservationsPage() {
         ))}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label={t("reserve.date")}><input type="date" className={inputClass} value={date} onChange={(event) => setDate(event.target.value)} /></Field>
+        <div data-setup="bookings-date"><Field label={t("reserve.date")}><input type="date" className={inputClass} value={date} onChange={(event) => setDate(event.target.value)} /></Field></div>
         <Field label={t("reserve.place")}>
           <ComboBox value={venueId ? String(venueId) : ""} onChange={(value) => setVenueId(Number(value))} options={venues.map((venue) => ({ value: String(venue.id), label: venue.name }))} />
         </Field>
       </div>
       {view === "floor" && !plan ? <div className="aspect-[4/3] max-w-3xl animate-pulse border border-line bg-line" aria-busy="true" /> : null}
       {view === "floor" && plan ? <FloorCanvas tables={plan.tables} width={plan.floor_plan.canvas_width} height={plan.floor_plan.canvas_height} backgroundUrl={plan.floor_plan.background_url} /> : null}
-      {loading ? <InfoListSkeleton /> : <ul className="space-y-3">
+      <div data-setup="bookings-list">{loading ? <InfoListSkeleton /> : <ul className="space-y-3">
         {rows.map((row) => (
           <li key={row.id} className="rounded-lg border border-line bg-paper p-4">
             <p className="font-medium">{when(row.start_at, locale)} · {row.table_name} · {row.party_size} {t("reserve.guestsWord")}</p>
@@ -114,7 +114,7 @@ export default function ReservationsPage() {
             </div>
           </li>
         ))}
-      </ul>}
+      </ul>}</div>
       {!loading && view === "day" ? (
         <section className="space-y-2">
           <h2 className="font-serif text-2xl">{t("reserve.schedule")}</h2>

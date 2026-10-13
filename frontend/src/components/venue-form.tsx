@@ -141,34 +141,38 @@ export function VenueForm({ venue }: { venue?: Venue }) {
       <Field label={t("field.business")}>
         <ComboBox value={form.business_id} onChange={(value) => setForm({ ...form, business_id: value })} options={[{ value: "", label: t("field.choose") }, ...businesses.map((business) => ({ value: String(business.id), label: business.name }))]} />
       </Field>
-      <Field label={t("field.category")}>
-        <ComboBox value={form.category_id} onChange={(value) => setForm({ ...form, category_id: value, subcategory_id: "" })} options={[{ value: "", label: t("field.choose") }, ...categories.map((category) => ({ value: String(category.id), label: category.label || category.name }))]} />
-      </Field>
+      <div data-setup="basics-category">
+        <Field label={t("field.category")}>
+          <ComboBox value={form.category_id} onChange={(value) => setForm({ ...form, category_id: value, subcategory_id: "" })} options={[{ value: "", label: t("field.choose") }, ...categories.map((category) => ({ value: String(category.id), label: category.label || category.name }))]} />
+        </Field>
+      </div>
       <Field label={t("field.subcategory")}>
         <ComboBox value={form.subcategory_id} onChange={(value) => setForm({ ...form, subcategory_id: value })} options={[{ value: "", label: t("field.none") }, ...(selected?.children?.map((child) => ({ value: String(child.id), label: child.label || child.name })) ?? [])]} />
       </Field>
-      <Field label={t("field.name")}><input className={inputClass} required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></Field>
+      <div data-setup="basics-name"><Field label={t("field.name")}><input className={inputClass} required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></Field></div>
       <CopyEditor
-        fields={[{ id: "description", label: t("field.description"), rows: 5 }]}
+        fields={[{ id: "description", label: t("field.description"), rows: 5, setup: "basics-description" }]}
         source={{ description: form.description }}
         setSource={(_id, value) => setForm({ ...form, description: value })}
         bag={form.translations}
         setBag={(translations) => setForm({ ...form, translations })}
       />
-      <Field label={t("field.address")}><input className={inputClass} required value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} /></Field>
-      <Field label={t("field.city")}><input className={inputClass} required value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} /></Field>
+      <div data-setup="basics-address"><Field label={t("field.address")}><input className={inputClass} required value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} /></Field></div>
+      <div data-setup="basics-city"><Field label={t("field.city")}><input className={inputClass} required value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} /></Field></div>
       <Field label={t("field.country")}><input className={inputClass} required value={form.country} onChange={(event) => setForm({ ...form, country: event.target.value })} /></Field>
-      <Field label={t("field.price")}>
-        <ComboBox value={form.price_level} onChange={(value) => setForm({ ...form, price_level: value })} options={[
-          { value: "1", label: "€" },
-          { value: "2", label: "€€" },
-          { value: "3", label: "€€€" },
-          { value: "4", label: "€€€€" },
-        ]} />
-      </Field>
+      <div data-setup="basics-price">
+        <Field label={t("field.price")}>
+          <ComboBox value={form.price_level} onChange={(value) => setForm({ ...form, price_level: value })} options={[
+            { value: "1", label: "€" },
+            { value: "2", label: "€€" },
+            { value: "3", label: "€€€" },
+            { value: "4", label: "€€€€" },
+          ]} />
+        </Field>
+      </div>
       <Field label={t("field.latitude")}><input className={inputClass} required value={form.latitude} onChange={(event) => setForm({ ...form, latitude: event.target.value })} /></Field>
       <Field label={t("field.longitude")}><input className={inputClass} required value={form.longitude} onChange={(event) => setForm({ ...form, longitude: event.target.value })} /></Field>
-      <Field label={t("field.phone")}><input className={inputClass} value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /></Field>
+      <div data-setup="basics-phone"><Field label={t("field.phone")}><input className={inputClass} value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /></Field></div>
       <Field label={t("field.email")}><input className={inputClass} type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></Field>
       <Field label={t("field.website")}><input className={inputClass} value={form.website} onChange={(event) => setForm({ ...form, website: event.target.value })} placeholder="https://" /></Field>
       <Field label="Instagram"><input className={inputClass} value={form.instagram} onChange={(event) => setForm({ ...form, instagram: event.target.value })} /></Field>
@@ -180,7 +184,7 @@ export function VenueForm({ venue }: { venue?: Venue }) {
           { value: "published", label: t("field.published") },
         ]} />
       </Field>
-      <label className="flex min-h-11 items-center gap-2 text-sm md:col-span-2">
+      <label data-setup="delivery-toggle" className="flex min-h-11 items-center gap-2 text-sm md:col-span-2">
         <input type="checkbox" checked={form.offers_delivery} onChange={(event) => setForm({ ...form, offers_delivery: event.target.checked })} />
         {t("form.delivery")}
       </label>
@@ -209,7 +213,7 @@ export function VenueForm({ venue }: { venue?: Venue }) {
           ))}
         </div>
       </fieldset>
-      <div className="md:col-span-2"><Button type="submit" loading={loading}>{t("action.save")}</Button></div>
+      <div className="md:col-span-2" data-setup="basics-save"><Button type="submit" loading={loading}>{t("action.save")}</Button></div>
     </form>
   );
 }

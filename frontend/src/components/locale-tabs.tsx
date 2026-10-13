@@ -68,7 +68,7 @@ export function CopyEditor({
   bag,
   setBag,
 }: {
-  fields: { id: string; label: string; rows?: number; required?: boolean }[];
+  fields: { id: string; label: string; rows?: number; required?: boolean; setup?: string }[];
   source: Record<string, string>;
   setSource: (id: string, value: string) => void;
   bag: CopyBag;
@@ -86,13 +86,15 @@ export function CopyEditor({
           else setBag(writeCopy(bag, tab, field.id, next, source[field.id] ?? "", () => undefined));
         };
         return (
-          <Field key={field.id} label={field.label}>
-            {field.rows ? (
-              <textarea className={`${inputClass} min-h-32 py-3`} rows={field.rows} required={tab === "cnr" && field.required !== false} value={value} onChange={(event) => onChange(event.target.value)} />
-            ) : (
-              <input className={inputClass} required={tab === "cnr" && field.required !== false} value={value} onChange={(event) => onChange(event.target.value)} />
-            )}
-          </Field>
+          <div key={field.id} data-setup={field.setup}>
+            <Field label={field.label}>
+              {field.rows ? (
+                <textarea className={`${inputClass} min-h-32 py-3`} rows={field.rows} required={tab === "cnr" && field.required !== false} value={value} onChange={(event) => onChange(event.target.value)} />
+              ) : (
+                <input className={inputClass} required={tab === "cnr" && field.required !== false} value={value} onChange={(event) => onChange(event.target.value)} />
+              )}
+            </Field>
+          </div>
         );
       })}
     </div>
